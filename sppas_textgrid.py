@@ -32,9 +32,9 @@ for subdir in os.listdir(base_folder):
                 textgrid_file_path = os.path.join(subdir_path, textgrid_file)
 
                 # Construct and execute the first command
-                command1 = f"python3 ./SPPAS-4/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment"
+                command1 = f"python3 ./SPPAS-4/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment --syllabify"
                 subprocess.run(command1, shell=True)
 
                 # Construct and execute the second command
-                command2 = f"python3 ./SPPAS-4/sppas/bin/syllabify.py -I {textgrid_file_path} -l fra -e .TextGrid"
-                subprocess.run(command2, shell=True)
+                #command2 = f"python3 ./SPPAS-4/sppas/bin/syllabify.py -I {textgrid_file_path} -l pcm -e .TextGrid"
+                #subprocess.run(command2, shell=True)
