@@ -41,6 +41,7 @@ def create_textgrid(file_path, output_textgrid_path):
         i_text = 0
         current_xmin = 0
         current_xmax = 0
+        last_element = []
 
         # Process each word in the sentence
         for i in range(len(words)):
@@ -49,7 +50,7 @@ def create_textgrid(file_path, output_textgrid_path):
                 current_xmax = int(align_end) / 1000
                 if current_xmax != 0.0:
                     intervals.append(tgio.Interval(0, current_xmax, "#"))
-            
+                    last_element = [0, current_xmax, "#"]
             if words[i] != "#":
                 sentence.append(words[i])
             
@@ -58,7 +59,7 @@ def create_textgrid(file_path, output_textgrid_path):
                 # if the sentence is not empty
                 if sentence:
                     # Remove all punctuations except '#'
-                    print("sentence:", sentence)
+                    #print("sentence:", sentence)
                     sentence_without_punc = [sentence[j] for j in range(len(sentence)) if tree[(i_text + j+1)].get("tag") != "PUNCT"]
                     # put the words of the sentence into a string
                     current_text = " ".join(sentence_without_punc)
@@ -72,8 +73,14 @@ def create_textgrid(file_path, output_textgrid_path):
                             current_xmin = int(align_begin) / 1000
                             align_end = misc_list[i_text].get(i_text + 1).get("AlignEnd")
                             current_xmax = int(align_end) / 1000
+                            if len(last_element) > 0 and last_element[1] != current_xmin and last_element[2] =="#":
+                                last_element[1] = current_xmin
+                                intervals = intervals[:-1]
+                                if last_element[0] != last_element[1]:
+                                    intervals.append(tgio.Interval(last_element[0], last_element[1], last_element[2]))
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
+                                last_element = [current_xmin, current_xmax, current_text]
                             i_text += 1
                             break
                         
@@ -106,7 +113,7 @@ def create_textgrid(file_path, output_textgrid_path):
                                 if last_element[2] != "":
                                     current_xmin = last_element[0]
                                 last_element = [intervals[-1].start, intervals[-1].end, intervals[-1].label]
-                            print("current text: ", current_text)
+                            #print("current text: ", current_text)
 
                             # if the max is different from the min and the last element in the list is '#'
                             if last_element[1] != current_xmin and last_element[2] == "#":
@@ -117,6 +124,7 @@ def create_textgrid(file_path, output_textgrid_path):
                                     intervals.append(tgio.Interval(last_element[0], last_element[1], last_element[2]))
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
+                                last_element = [current_xmin, current_xmax, current_text]
                             i_text += 1
                             break
                         i_text += 1
@@ -137,10 +145,11 @@ def create_textgrid(file_path, output_textgrid_path):
                             # if the max of the previous element is different from the min of the current element
                             if(last_element[1] != current_xmin):
                                 current_xmin = last_element[1]
-                            
+
                             # if the min is different from the max
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
+                                last_element = [current_xmin, current_xmax, current_text]
                             i_text += 1
                             break
                         i_text += 1
@@ -164,10 +173,16 @@ for fichier in os.listdir(dossier_conllu):
         chemin_conllu = os.path.join(dossier_conllu, fichier)
         # Generate the output TextGrid file name
         nom_fichier_sans_extension = os.path.splitext(fichier)[0]
-        #print(nom_fichier_sans_extension)
-        chemin_textgrid = os.path.join('', f'../TEXTGRID/{nom_fichier_sans_extension}.TextGrid')
+        if nom_fichier_sans_extension.startswith('ABJ'):
+            folder = '_'.join(nom_fichier_sans_extension.split('_')[:3])
+        else:
+            folder = '_'.join(nom_fichier_sans_extension.split('_')[:2])
+
+        print(nom_fichier_sans_extension)
+        chemin_textgrid = os.path.join('', f'../TEXTGRID_WAV/{folder}/{nom_fichier_sans_extension}.TextGrid')
         # Call the function for each CoNLL-U file
-        if nom_fichier_sans_extension != 'IBA_03_Womanisers_MG':
-            create_textgrid(chemin_conllu, chemin_textgrid)
+        #if nom_fichier_sans_extension != 'IBA_03_Womanisers_MG':
+        create_textgrid(chemin_conllu, chemin_textgrid)
+            
 
 print("Done !")
