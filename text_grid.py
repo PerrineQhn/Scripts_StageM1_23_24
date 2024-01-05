@@ -59,7 +59,7 @@ def create_textgrid(file_path, output_textgrid_path):
                 # if the sentence is not empty
                 if sentence:
                     # Remove all punctuations except '#'
-                    #print("sentence:", sentence)
+                    # print("sentence:", sentence)
                     sentence_without_punc = [sentence[j] for j in range(len(sentence)) if tree[(i_text + j+1)].get("tag") != "PUNCT"]
                     # put the words of the sentence into a string
                     current_text = " ".join(sentence_without_punc)
@@ -164,8 +164,6 @@ def create_textgrid(file_path, output_textgrid_path):
 #create_textgrid('../SUD_Naija-NSC-master/non_gold/ABJ_INF_02_Cooking-Recipes_M.conllu', '../test/ABJ_INF_02.TextGrid')
 
 dossier_conllu = '../SUD_Naija-NSC-master/'
-
-
 
 # Loop through all files in the directory
 for fichier in os.listdir(dossier_conllu):

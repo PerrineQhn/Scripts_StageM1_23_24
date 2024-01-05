@@ -42,6 +42,7 @@ def create_textgrid(file_path, input_textgrid_path, output_textgrid_path):
             else:
                 i += 1
                 print("error")
+
     #print(index_intervals)
     t = tgio.IntervalTier("index", index_intervals)
     textgrid.addTier(t)
@@ -50,12 +51,13 @@ def create_textgrid(file_path, input_textgrid_path, output_textgrid_path):
 
 if __name__ == "__main__":
 
-    conllu_folder = 'SUD_Naija-NSC-master'
-    textgrid_base_folder = 'TEXTGRID_WAV/'
+    conllu_folder = '../SUD_Naija-NSC-master'
+    textgrid_base_folder = '../TEXTGRID_WAV/'
 
     for files in os.listdir(conllu_folder):
         if files.endswith('MG.conllu'):
             file_path = os.path.join(conllu_folder, files)
+            print(file_path)
             #print(file_path)
             # Adjust the folder path based on the file name
             if files.startswith('ABJ'):
@@ -68,6 +70,7 @@ if __name__ == "__main__":
 
             # Construct the paths for input and output TextGrid files
             input_textgrid_path = os.path.join(textgrid_folder, files.replace('.conllu', '-palign.TextGrid'))
+            print(input_textgrid_path)
             output_textgrid_path = os.path.join(textgrid_folder, files.replace('.conllu', '-id.TextGrid'))
 
             # Create TextGrid
