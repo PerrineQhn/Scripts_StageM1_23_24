@@ -163,7 +163,7 @@ def create_textgrid(file_path, output_textgrid_path):
 
 #create_textgrid('../SUD_Naija-NSC-master/non_gold/ABJ_INF_02_Cooking-Recipes_M.conllu', '../test/ABJ_INF_02.TextGrid')
 
-dossier_conllu = '../SUD_Naija-NSC-master/'
+dossier_conllu = '../SUD_Naija-NSC-master/non_gold/'
 
 # Loop through all files in the directory
 for fichier in os.listdir(dossier_conllu):
@@ -177,10 +177,12 @@ for fichier in os.listdir(dossier_conllu):
             folder = '_'.join(nom_fichier_sans_extension.split('_')[:2])
 
         print(nom_fichier_sans_extension)
-        chemin_textgrid = os.path.join('', f'../TEXTGRID_WAV/{folder}/{nom_fichier_sans_extension}.TextGrid')
+        #chemin_textgrid = os.path.join('', f'../TEXTGRID_WAV/{folder}/{nom_fichier_sans_extension}.TextGrid')
+        chemin_textgrid = os.path.join('', f'../TEXTGRID_WAV_nongold/{folder}/{nom_fichier_sans_extension}.TextGrid')
+
         # Call the function for each CoNLL-U file
-        #if nom_fichier_sans_extension != 'IBA_03_Womanisers_MG':
-        create_textgrid(chemin_conllu, chemin_textgrid)
+        if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
+            create_textgrid(chemin_conllu, chemin_textgrid)
             
 
 print("Done !")
