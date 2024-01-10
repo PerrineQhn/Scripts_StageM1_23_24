@@ -34,9 +34,9 @@ for subdir in tqdm(os.listdir(base_folder)):
                 textgrid_file_path = os.path.join(subdir_path, textgrid_file)
 
                 # Construct and execute the first command
-                command1 = f"python3 ./SPPAS-4/sppas/bin/searchipus.py -I {wav_file_path} -e .TextGrid --quiet"
-                subprocess.run(command1, shell=True)
+                # command1 = f"python3 ./SPPAS-4/sppas/bin/searchipus.py -I {wav_file_path} -e .TextGrid --quiet"
+                # subprocess.run(command1, shell=True)
 
-                #command = f"python3 ./SPPAS-4/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment --syllabify"
-                #subprocess.run(command, shell=True)
+                command = f"python3 ./SPPAS-4/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment --syllabify"
+                subprocess.run(command, shell=True)
 

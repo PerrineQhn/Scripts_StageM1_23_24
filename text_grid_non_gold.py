@@ -59,6 +59,7 @@ def create_textgrid(file_path, output_textgrid_path):
                 current_xmax = int(align_end) / 1000
                 if current_xmax != 0.0:
                     intervals.append(tgio.Interval(0, current_xmax, "#"))
+
             if words[i] != "#":
                 sentence.append(words[i])
             if words[i] == "#" or i == len(words) - 1:
@@ -125,8 +126,8 @@ for fichier in os.listdir(dossier_conllu):
         chemin_textgrid = os.path.join('', f'./TEXTGRID_WAV_nongold/{folder}/{nom_fichier_sans_extension}.TextGrid')
 
         # Call the function for each CoNLL-U file
-        if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
-            create_textgrid(chemin_conllu, chemin_textgrid)
+        # if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
+        create_textgrid(chemin_conllu, chemin_textgrid)
             
 
 print("Done !")
