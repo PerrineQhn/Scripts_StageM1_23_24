@@ -103,7 +103,7 @@ def align_silence(ipus_path, tokens_path):
     return textgrid_tokens
 
 
-def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv):
+def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None):
 
     base_name = os.path.splitext(os.path.basename(sent_path))[0]
 
@@ -130,31 +130,39 @@ def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv):
                     for index_interval in reversed(textgrid_id.tierDict['index'].entryList):
                         if index_interval[1] <= xmin:
                             prev_index_label = index_interval[2]
-                            # print(prev_index_label)
                             break
 
                     # Iterate over the index intervals to find the next label
+                    found_next_index = False
                     for index_interval in textgrid_id.tierDict['index'].entryList:
                         if index_interval[0] >= xmax:
                             next_index_label = index_interval[2]
+                            found_next_index = True
                             break
 
-                    if prev_index_label is None or next_index_label is None:
-                        print(f"Anomaly detected: prev={prev_index_label}, next={next_index_label}")
+                    # If the next index label is not found, use the last index label of the phrase
+                    if not found_next_index:
+                        next_index_label = textgrid_id.tierDict['index'].entryList[-1][2]
+
+                    if prev_index_label is None:
+                        print(f"Anomaly detected: file={base_name}, prev={prev_index_label}, next={next_index_label}, label={sent_interval[2]}")
                     else:
                         # Add the phrase and index labels to the list
                         phrases_with_hash.append((base_name, prev_index_label, next_index_label, sent_interval[2]))
 
 
-    # Write the phrases_with_hash to a TSV file
-    with open(output_tsv, 'w', encoding='utf-8') as f:
-        for item in phrases_with_hash:
-            f.write('\t'.join(item) + '\n')
+    # # Write the phrases_with_hash to a TSV file
+    # with open(output_tsv, 'w', encoding='utf-8') as f:
+    #     for item in phrases_with_hash:
+    #         f.write('\t'.join(item) + '\n')
 
     return phrases_with_hash
 
 
+
 base_folder = "./TEXTGRID_WAV_nongold/"
+tsv_folder = "./TSV"
+all_phrases_with_hash = [] 
 
 # detect_silence_in_sentence("./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-id.TextGrid", "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M.TextGrid", "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-syl_tok.TextGrid")
 
@@ -204,4 +212,11 @@ for subdir in tqdm(os.listdir(base_folder)):
                 # Call your functions here
                 create_tier(ipus_textgrid_path, id_textgrid_path, syl_tok_output_path)
                 align_silence(ipus_textgrid_path, syl_tok_output_path)
-                detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path, output_tsv_path)
+                phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
+                all_phrases_with_hash.extend(phrases_with_hash)
+
+# Write the accumulated results to a TSV file
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
+with open(output_tsv_path, 'w', encoding='utf-8') as f:
+    for item in all_phrases_with_hash:
+        f.write('\t'.join(item) + '\n')
