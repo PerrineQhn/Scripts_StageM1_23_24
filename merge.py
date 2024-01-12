@@ -31,6 +31,35 @@ def generate_tiers_selection(directory):
 
     return tiers_trans, other_tiers
 
+
+def generate_tiers_selection_non_gold_silence(directory):
+    """
+    Generates a selection of tiers from TextGrid files in a specific directory.
+
+    :param directory: Path to the directory containing the TextGrid files.
+    :return: Two dictionaries - one for the 'trans' tier and another for the other tiers.
+    """
+    tiers_trans = {}
+    other_tiers = {}
+    for file in sorted(os.listdir(directory)):
+        if file.endswith('.TextGrid'):
+            # Tiers for syllable alignment
+            if 'M-syl_tok.TextGrid' in file:
+                other_tiers[file] = ['Combined']
+                # print(file)
+            # Tiers for index alignment
+            elif 'M-id.TextGrid' in file:
+                other_tiers[file] = ['index']
+                #print(file)
+            elif 'M-palign.TextGrid' in file:
+                other_tiers[file] = ['TokensAlign']
+            # Transcription tiers
+            elif not any(substring in file for substring in ['M-phon.TextGrid', 'M-token.TextGrid', 'merged', 'M-syll.TextGrid', 'M-id.TextGrid', 'M-syl_tok.TextGrid']):
+                tiers_trans[file] = ['trans']
+                #print(file)
+
+    return tiers_trans, other_tiers
+
 def merge_textgrid_tiers(directory, tiers_trans, other_tiers, base_name_file, merged=None):
     """
     Merges different tiers from multiple TextGrid files into a single file.
@@ -48,6 +77,7 @@ def merge_textgrid_tiers(directory, tiers_trans, other_tiers, base_name_file, me
         tg = textgrid.TextGrid.fromFile(os.path.join(directory, file))
         for tier_name in tiers_list:
             tier = tg.getFirst(tier_name)
+            print(tier)
             merged_textgrid.append(tier)
 
     # Définition de l'ordre spécifique des autres tiers
@@ -67,9 +97,55 @@ def merge_textgrid_tiers(directory, tiers_trans, other_tiers, base_name_file, me
     else:
         merged_textgrid.write(os.path.join(directory, f'{base_name_file}-merged.TextGrid'))
 
+def merge_textgrid_non_gold_tiers(directory, tiers_trans, other_tiers, base_name_file, merged=None):
+    """
+    Merges different tiers from multiple TextGrid files into a single file.
 
-base_folder = './TEXTGRID_WAV'
-merged = './MERGED'
+    :param directory: Path to the directory containing the TextGrid files.
+    :param tiers_trans: Dictionary of files with the 'trans' tier.
+    :param other_tiers: Dictionary of other tiers to be merged.
+    :param base_name_file: Base name for the output file.
+    :param merged: Destination folder for the merged file (optional).
+    """
+    merged_textgrid = textgrid.TextGrid()
+
+    # Add 'trans' tiers
+    for file, tiers_list in tiers_trans.items():
+        tg = textgrid.TextGrid.fromFile(os.path.join(directory, file))
+        for tier_name in tiers_list:
+            tier = tg.getFirst(tier_name)
+            if tier is not None:  # Check if the tier is found
+                merged_textgrid.append(tier)
+            else:
+                print(f"Tier '{tier_name}' not found in file: {file}")
+
+    # Specific order of other tiers
+    tier_order = ['TokensAlign', 'index', 'Combined']
+
+    # Add other tiers in the specified order
+    for tier_name in tier_order:
+        for file, tiers_list in other_tiers.items():
+            if tier_name in tiers_list:
+                tg = textgrid.TextGrid.fromFile(os.path.join(directory, file))
+                tier = tg.getFirst(tier_name)
+                if tier is not None:  # Check if the tier is found
+                    merged_textgrid.append(tier)
+                else:
+                    print(f"Tier '{tier_name}' not found in file: {file}")
+
+
+    # Sauvegarde du fichier TextGrid fusionné
+    if merged:
+        merged_textgrid.write(os.path.join(merged, f'{base_name_file}-merged.TextGrid'))
+    else:
+        merged_textgrid.write(os.path.join(directory, f'{base_name_file}-merged.TextGrid'))
+
+# base_folder = './TEXTGRID_WAV'
+# merged = './MERGED'
+
+base_folder = './TEXTGRID_WAV_nongold'
+merged = './MERGED/non_gold'
+
 
 for subdir in os.listdir(base_folder):
     subdir_path = os.path.join(base_folder, subdir)
@@ -77,6 +153,10 @@ for subdir in os.listdir(base_folder):
     if os.path.isdir(subdir_path):
         print(subdir_path)
         # Generate tier selections and merge TextGrids
-        tiers_trans, other_tiers = generate_tiers_selection(subdir_path)
-        #merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file)
-        merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
+        # tiers_trans, other_tiers = generate_tiers_selection(subdir_path)
+        # merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file)
+        # merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
+        
+        tiers_trans, other_tiers = generate_tiers_selection_non_gold_silence(subdir_path)
+        print(textgrid)
+        merge_textgrid_non_gold_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)

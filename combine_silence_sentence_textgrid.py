@@ -1,93 +1,207 @@
 from praatio import tgio
 import textgrid
+from tqdm import tqdm
+import os
 
-# NE PAS SUPPRIMER CETTE FONCTION
 def create_tier(ipus_path, tokens_path, output_path):
+    # Open the TextGrid files
     textgrid_ipus = tgio.openTextgrid(ipus_path)
     textgrid_tokens = tgio.openTextgrid(tokens_path)
 
-    textgrid = tgio.Textgrid()
+    # Create a new TextGrid object for the combined intervals
+    combined_textgrid = tgio.Textgrid()
 
     combine_intervals = []
 
-    # Access specific tiers
+    # Get the intervals from the 'IPUs' and 'TokensAlign' tiers
     ipus_tier = textgrid_ipus.tierDict['IPUs']
     tokens_tier = textgrid_tokens.tierDict['TokensAlign']
 
     ipus_intervals = ipus_tier.entryList
     tokens_intervals = tokens_tier.entryList
 
-    # Store the last end time of the silence to adjust the start of the next token
-    last_silence_end = 0
-    for token_start, token_end, token_label in tokens_intervals:
-        # Check if the token starts after the last silence ended
-        if token_start >= last_silence_end:
-            overlapped = False
-            # Check each silence interval
-            for ipu_start, ipu_end, ipu_label in ipus_intervals:
-                if ipu_label == '#' and not (token_end <= ipu_start or token_start >= ipu_end):
-                    # If token starts before the silence and ends after the silence starts
-                    if token_start < ipu_start < token_end:
-                        combine_intervals.append([token_start, ipu_start, token_label])
-                    # If token starts before the silence ends and ends after the silence
-                    if token_start < ipu_end < token_end:
-                        # Adjust the start for next potential token
-                        token_start = ipu_end
-                    overlapped = True
-            # If token was not overlapped by silence or only partially overlapped
-            if not overlapped or token_start < token_end:
-                combine_intervals.append([token_start, token_end, token_label])
-            # Update the last silence end time
-            last_silence_end = token_start
-        else:
-            # If the token starts before the last silence ended, adjust the token start
-            if token_end > last_silence_end:
-                combine_intervals.append([last_silence_end, token_end, token_label])
-                last_silence_end = token_end  # Update the last silence end time
+    # Process each token interval
+    for token in tokens_intervals:
+        token_start, token_end, token_label = token
+        
+        # Check for silences within the token interval
+        for ipu in ipus_intervals:
+            ipu_start, ipu_end, ipu_label = ipu
+            if ipu_label == '#' and token_start < ipu_end and token_end > ipu_start:
+                # Split the token by the silence and keep the longest part
+                if (ipu_start - token_start) > (token_end - ipu_end):
+                    token_end = ipu_start
+                else:
+                    token_start = ipu_end
+                break  # Only consider the first silence that affects this token
 
-    # Create the combined tier
-    tier = tgio.IntervalTier("Combined", combine_intervals, minT=tokens_intervals[0][0], maxT=tokens_intervals[-1][1])
-    textgrid.addTier(tier)
-    textgrid.save(output_path)
+        # Ensure the start time is before the end time before appending
+        if token_start < token_end:
+            combine_intervals.append([token_start, token_end, token_label])
+        # else:
+        #     print(f"Anomaly detected: start={token_start}, end={token_end}, label={token_label}")
+
+    # Create the combined tier and add it to the TextGrid
+    combined_tier = tgio.IntervalTier("Combined", combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+    combined_textgrid.addTier(combined_tier)
+    fill_gaps_with_silence(combined_tier, combined_textgrid.maxTimestamp)
+    # Save the new TextGrid
+    combined_textgrid.save(output_path)
 
 
 
-def find_phrases_with_hash(textgrid_path, ipus_textgrid_path):
-    # Charger les fichiers .TextGrid et .ipus.TextGrid
-    textgrid = tgio.openTextgrid(textgrid_path)
-    ipus_textgrid = tgio.openTextgrid(ipus_textgrid_path)
+def fill_gaps_with_silence(tier, max_timestamp):
+    new_intervals = []
+    last_end = 0
 
-    # Récupérer les intervalles avec "#" dans ipus.TextGrid
-    ipus_intervals_with_hash = []
-    for interval in ipus_textgrid.tierDict["IPUs"].entryList:
-        if interval[2] == "#":
-            ipus_intervals_with_hash.append((interval[0], interval[1]))
+    # Add existing intervals and look for gaps to fill with silence
+    for start, end, label in tier.entryList:
+        # If there's a gap before the current interval, add a silence
+        if start > last_end:
+            new_intervals.append((last_end, start, '#'))
+        new_intervals.append((start, end, label))
+        last_end = end
 
-    # Récupérer les phrases correspondantes dans .TextGrid
+    # Check for a gap at the end
+    if last_end < max_timestamp:
+        new_intervals.append((last_end, max_timestamp, '#'))
+
+    # Update the tier with the new intervals
+    tier.entryList = new_intervals
+
+
+def align_silence(ipus_path, tokens_path):
+    # Open the TextGrid files
+    textgrid_ipus = tgio.openTextgrid(ipus_path)
+    textgrid_tokens = tgio.openTextgrid(tokens_path)
+
+    # Get the tiers from the TextGrid objects
+    ipus_tier = textgrid_ipus.tierDict['IPUs']
+    combined_tier = textgrid_tokens.tierDict['Combined']
+
+    # Loop over the intervals in the Combined tier
+    for i, combined_interval in enumerate(combined_tier.entryList):
+        if combined_interval.label == '#':
+            # Find the closest matching silence interval from IPUs tier
+            closest_silence_ipu = min(
+                [ipu_interval for ipu_interval in ipus_tier.entryList if ipu_interval.label == '#'],
+                key=lambda x: abs(x.start - combined_interval.start)
+            )
+
+            # Create a new interval with the start and end times of the closest silence
+            new_combined_interval = tgio.Interval(
+                closest_silence_ipu.start,
+                closest_silence_ipu.end,
+                combined_interval.label
+            )
+
+            # Replace the interval in the combined tier
+            combined_tier.entryList[i] = new_combined_interval
+
+    # Save or return the modified TextGrid
+    textgrid_tokens.tierDict['Combined'] = combined_tier
+    return textgrid_tokens
+
+
+def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv):
+
+    base_name = os.path.splitext(os.path.basename(sent_path))[0]
+
+    # Open the TextGrid files
+    textgrid_id = tgio.openTextgrid(id_path)
+    textgrid_sent = tgio.openTextgrid(sent_path)
+    textgrid_syl_tok = tgio.openTextgrid(syl_tok_path)
+
+    # Retrieve intervals with "#" in the 'Combined' tier
     phrases_with_hash = []
-    for ipus_interval in ipus_intervals_with_hash:
-        ipus_xmin, ipus_xmax = ipus_interval
+    for interval in textgrid_syl_tok.tierDict['Combined'].entryList:
+        if "#" in interval[2]:
+            xmin = interval[0]
+            xmax = interval[1]
 
-        # Chercher la phrase correspondante dans .TextGrid
-        for textgrid_interval in textgrid.tierDict["trans"].entryList:
-            textgrid_xmin, textgrid_xmax = textgrid_interval[:2]
+            # Find the corresponding phrases in the 'trans' tier
+            for sent_interval in textgrid_sent.tierDict['trans'].entryList:
+                if sent_interval[0] <= xmin and sent_interval[1] >= xmax:
+                    # Initialize the index labels before and after the '#' interval
+                    prev_index_label = None
+                    next_index_label = None
 
-            if textgrid_xmin <= ipus_xmin <= textgrid_xmax and textgrid_xmin <= ipus_xmax <= textgrid_xmax:
-                # La phrase .TextGrid correspond à l'intervalle ipus.TextGrid
-                phrases_with_hash.append(textgrid_interval[2])
+                    # Iterate over the index intervals to find the previous label
+                    for index_interval in reversed(textgrid_id.tierDict['index'].entryList):
+                        if index_interval[1] <= xmin:
+                            prev_index_label = index_interval[2]
+                            # print(prev_index_label)
+                            break
 
-    # Retourner les phrases correspondantes
+                    # Iterate over the index intervals to find the next label
+                    for index_interval in textgrid_id.tierDict['index'].entryList:
+                        if index_interval[0] >= xmax:
+                            next_index_label = index_interval[2]
+                            break
+
+                    if prev_index_label is None or next_index_label is None:
+                        print(f"Anomaly detected: prev={prev_index_label}, next={next_index_label}")
+                    else:
+                        # Add the phrase and index labels to the list
+                        phrases_with_hash.append((base_name, prev_index_label, next_index_label, sent_interval[2]))
+
+
+    # Write the phrases_with_hash to a TSV file
+    with open(output_tsv, 'w', encoding='utf-8') as f:
+        for item in phrases_with_hash:
+            f.write('\t'.join(item) + '\n')
+
     return phrases_with_hash
 
-# Utilisation de la fonction
-textgrid_path = "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M.TextGrid"
-ipus_textgrid_path = "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-ipus.TextGrid"
-id_textgrid_path = "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-id.TextGrid"
-# phrases = find_phrases_with_hash(textgrid_path, ipus_textgrid_path)
 
-create_tier(ipus_textgrid_path, id_textgrid_path, "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-syl_tok.TextGrid")
+base_folder = "./TEXTGRID_WAV_nongold/"
+
+# detect_silence_in_sentence("./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-id.TextGrid", "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M.TextGrid", "./TEXTGRID_WAV_nongold/KAD_24/KAD_24_Biography_M-syl_tok.TextGrid")
+
+# Iterate through all the subfolders
+for subdir in tqdm(os.listdir(base_folder)):
+    subdir_path = os.path.join(base_folder, subdir)
+
+    # Check if the item is a folder
+    if os.path.isdir(subdir_path):
+        # List to store the names of .TextGrid files
+        ipus_files = []
+        id_files = []
+        sent_files = []
+
+        # Iterate through all files in the subfolder
+        for file in os.listdir(subdir_path):
+            if file.endswith("_M-ipus.TextGrid"):
+                ipus_files.append(file)
+            elif file.endswith("_M-id.TextGrid"):
+                id_files.append(file)
+            elif file.endswith("_M.TextGrid"):
+                sent_files.append(file)
+
+        # Process the files if they are present
+        for ipus_file in ipus_files:
+            # Construct the paths to the ipus and id TextGrids
+            ipus_textgrid_path = os.path.join(subdir_path, ipus_file)
+            id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
+            sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
+            sent_textgrid_path = None
+
+            for sent_file in sent_files:
+                if sent_file == sent_textgrid_name:
+                    sent_textgrid_path = os.path.join(subdir_path, sent_file)
+                    break
+            
+            # Check if the corresponding id and sent TextGrids exist
+            if id_textgrid_name in id_files and sent_textgrid_path is not None:
+                id_textgrid_path = os.path.join(subdir_path, id_textgrid_name)
+
+                # Construct the output path for syl_tok tier
+                syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
+
+                output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
 
 
-# # Afficher les phrases correspondantes
-# for phrase in phrases:
-#     print(phrase)
+                # Call your functions here
+                create_tier(ipus_textgrid_path, id_textgrid_path, syl_tok_output_path)
+                align_silence(ipus_textgrid_path, syl_tok_output_path)
+                detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path, output_tsv_path)
