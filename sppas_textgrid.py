@@ -4,7 +4,8 @@ from tqdm import tqdm
 
 # Path to the folder containing subfolders
 # base_folder = "./TEXTGRID_WAV"
-base_folder = "./TEXTGRID_WAV_nongold"
+# base_folder = "./TEXTGRID_WAV_nongold"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN"
 
 # Iterate through all the subfolders
 for subdir in tqdm(os.listdir(base_folder)):

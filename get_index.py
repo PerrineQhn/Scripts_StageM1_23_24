@@ -153,14 +153,15 @@ def create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path
     textgrid.save(output_textgrid_path)
 
 if __name__ == "__main__":
-    # conllu_folder = './SUD_Naija-NSC-master'
+    conllu_folder = './SUD_Naija-NSC-master'
     # textgrid_base_folder = './TEXTGRID_WAV/'
-    conllu_folder = './SUD_Naija-NSC-master/non_gold/'
-    textgrid_base_folder = './TEXTGRID_WAV_nongold/'
+    textgrid_base_folder = './TEXTGRID_WAV_gold_non_gold_TALN/'
+    # conllu_folder = './SUD_Naija-NSC-master/non_gold/'
+    # textgrid_base_folder = './TEXTGRID_WAV_nongold/'
 
     for files in os.listdir(conllu_folder):
-        # if files.endswith('MG.conllu') : 
-        if files.endswith('M.conllu'):
+        if files.endswith('MG.conllu') : 
+        # if files.endswith('M.conllu'):
             file_path = os.path.join(conllu_folder, files)
             #print(file_path)
             # Adjust the folder path based on the file name
@@ -179,5 +180,5 @@ if __name__ == "__main__":
 
             # Create TextGrid
             # create_textgrid(file_path, input_textgrid_path, output_textgrid_path)
-            if files != "LAG_24_Focus-On-Your-Life_M.conllu":
-                create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path)
+            # if files != "LAG_24_Focus-On-Your-Life_M.conllu":
+            create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path)

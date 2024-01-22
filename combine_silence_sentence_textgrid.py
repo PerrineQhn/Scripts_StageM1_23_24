@@ -183,9 +183,11 @@ def create_tier(ipus_path, tokens_path, pitch_path, output_path):
     # Save the new TextGrid
     combined_textgrid.save(output_path)
 
-base_folder = "./TEXTGRID_WAV_nongold/"
+# base_folder = "./TEXTGRID_WAV_nongold/"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN/"
 tsv_folder = "./TSV/"
-pitchtier_folder = "./Praat/non_gold/"
+# pitchtier_folder = "./Praat/non_gold/"
+pitchtier_folder = "./Praat/"
 all_phrases_with_hash = [] 
 
 
@@ -207,40 +209,47 @@ for subdir in tqdm(os.listdir(base_folder)):
 
         # Iterate through all files in the subfolder
         for file in os.listdir(subdir_path):
-            if file.endswith("_M-ipus.TextGrid"):
+            # print(file)
+            # if file.endswith("_M-ipus.TextGrid"):
+            if file.endswith("_MG-ipus.TextGrid"):
                 ipus_files.append(file)
-            elif file.endswith("_M-id.TextGrid"):
+            # elif file.endswith("_M-id.TextGrid"):
+            elif file.endswith("_MG-id.TextGrid"):
                 id_files.append(file)
-            elif file.endswith("_M.TextGrid"):
+            # elif file.endswith("_M.TextGrid"):
+            elif file.endswith("_MG.TextGrid"):
                 sent_files.append(file)
 
         # Process the files if they are present
         for ipus_file in ipus_files:
             # Construct the paths to the ipus and id TextGrids
             ipus_textgrid_path = os.path.join(subdir_path, ipus_file)
-            id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
-            sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
+            # id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
+            # sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
+            id_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-id.TextGrid")
+            sent_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.TextGrid")
             sent_textgrid_path = None
 
             # Construire le chemin vers le fichier PitchTier correspondant
-            pitchtier_file_name = ipus_file.replace("_M-ipus.TextGrid", "_M.PitchTier")
+            # pitchtier_file_name = ipus_file.replace("_M-ipus.TextGrid", "_M.PitchTier")
+            pitchtier_file_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.PitchTier")
             pitchtier_path = os.path.join(pitchtier_folder, pitchtier_file_name)
 
             # Vérifier si le fichier PitchTier existe
             if os.path.exists(pitchtier_path):
                 for sent_file in sent_files:
+                    # print(sent_file, sent_textgrid_name)
                     if sent_file == sent_textgrid_name:
                         sent_textgrid_path = os.path.join(subdir_path, sent_file)
                         break
-                
-                # Check if the corresponding id and sent TextGrids exist
+
                 if id_textgrid_name in id_files and sent_textgrid_path is not None:
                     id_textgrid_path = os.path.join(subdir_path, id_textgrid_name)
-
+                    # print(id_textgrid_path)
                     # Construct the output path for syl_tok tier
-                    syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
-
-                    output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
+                    # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
+                    syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid")
+                    # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
 
                     # Create the syl_tok tier and align the silences
                     create_tier(ipus_textgrid_path, id_textgrid_path, pitchtier_path, syl_tok_output_path)
@@ -248,10 +257,10 @@ for subdir in tqdm(os.listdir(base_folder)):
                     phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
                     all_phrases_with_hash.extend(phrases_with_hash)
                 else:
-                    print(f"PitchTier file not found for {ipus_file}")
+                    print(f"PitchTier file not found for {ipus_file}\n")
 
 # # Write the accumulated results to a TSV file
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
-with open(output_tsv_path, 'w', encoding='utf-8') as f:
-    for item in all_phrases_with_hash:
-        f.write('\t'.join(item) + '\n')
+# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
+# with open(output_tsv_path, 'w', encoding='utf-8') as f:
+#     for item in all_phrases_with_hash:
+#         f.write('\t'.join(item) + '\n')
