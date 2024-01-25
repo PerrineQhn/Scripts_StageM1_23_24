@@ -1,88 +1,60 @@
 from praatio import tgio
-import textgrid
 import os
 import csv
 
-def compare_silence(file_path):
-    # Extract the base name of the file for output purposes
-    base_name = os.path.splitext(os.path.basename(file_path))[0]
-    
-    # Open the TextGrid file
+def compare_silence(file_path, global_writer):
     textgrid_sil = tgio.openTextgrid(file_path)
     
-    # Lists to store silence intervals and durations
-    combined_silences = []
-    tokensalign_silences = []
-    overlaps = []
-    
-    # Variables to store total silence duration
-    total_combined_silence_duration = 0
-    total_tokensalign_silence_duration = 0
-    
-    # Process the 'Combined' tier
-    for interval in textgrid_sil.tierDict['Combined'].entryList:
-        if "#" in interval[2]:
-            xmin = interval[0]
-            xmax = interval[1]
-            combined_silences.append((xmin, xmax))
-            total_combined_silence_duration += xmax - xmin
-    
-    # Process the 'TokensAlign' tier
-    for interval in textgrid_sil.tierDict['TokensAlign'].entryList:
-        if "#" in interval[2]:
-            xmin = interval[0]
-            xmax = interval[1]
-            tokensalign_silences.append((xmin, xmax))
-            total_tokensalign_silence_duration += xmax - xmin
-    
-    # Compare silences between 'Combined' and 'TokensAlign'
+    combined_silences = [(interval[0], interval[1]) for interval in textgrid_sil.tierDict['Combined'].entryList if "#" in interval[2]]
+    tokensalign_silences = [(interval[0], interval[1]) for interval in textgrid_sil.tierDict['TokensAlign'].entryList if "#" in interval[2]]
+
+    def check_overlap(interval1, interval2):
+        return max(interval1[0], interval2[0]) < min(interval1[1], interval2[1])
+
+    exact_matches, partial_overlaps, unique_combined, unique_tokensalign = [], [], [], []
+
     for c_sil in combined_silences:
-        c_start, c_end = c_sil
         for t_sil in tokensalign_silences:
-            t_start, t_end = t_sil
-            if (c_start >= t_start and c_end <= t_end) or (t_start >= c_start and t_end <= c_end):
-                overlaps.append((c_start, c_end, t_start, t_end))
+            if c_sil == t_sil:
+                exact_matches.append(c_sil)
+            elif check_overlap(c_sil, t_sil):
+                partial_overlaps.append((c_sil, t_sil))
 
-    return {
-        "base_name": base_name,
-        "combined_silences": len(combined_silences),
-        "tokensalign_silences": len(tokensalign_silences),
-        "overlaps": overlaps,
-        "more_silence_in_combined": total_combined_silence_duration > total_tokensalign_silence_duration
-    }
+    unique_combined = [c_sil for c_sil in combined_silences if c_sil not in exact_matches and not any(check_overlap(c_sil, t_sil) for t_sil in tokensalign_silences)]
+    unique_tokensalign = [t_sil for t_sil in tokensalign_silences if t_sil not in exact_matches and not any(check_overlap(t_sil, c_sil) for c_sil in combined_silences)]
 
-# Directory where your TextGrid files are located
+    # Write individual file details
+    base_name = os.path.splitext(os.path.basename(file_path))[0]
+    individual_tsv_path = os.path.join("TSV", base_name + "_details.tsv")
+    with open(individual_tsv_path, 'w', newline='') as file:
+        individual_writer = csv.writer(file, delimiter='\t')
+        individual_writer.writerow(['Category', 'Start Time', 'End Time'])
+        # Write each category
+        for match in exact_matches:
+            individual_writer.writerow(['Exact Match', match[0], match[1]])
+        for overlap in partial_overlaps:
+            individual_writer.writerow(['Partial Overlap', overlap[0][0], overlap[0][1]])
+        for unique in unique_combined:
+            individual_writer.writerow(['Unique in Combined', unique[0], unique[1]])
+        for unique in unique_tokensalign:
+            individual_writer.writerow(['Unique in TokensAlign', unique[0], unique[1]])
+
+    # Add to global data
+    global_writer.writerow([base_name, len(combined_silences), len(tokensalign_silences), len(exact_matches), len(partial_overlaps), len(unique_combined), len(unique_tokensalign)])
+
+# Main processing
 folder_path = "MERGED/gold_non_gold"
-
-# Prepare to collect all results
-all_results = []
-
-# Collect data for each TextGrid file in the folder
-for file in os.listdir(folder_path):
-    if file.endswith(".TextGrid"):
-        file_path = os.path.join(folder_path, file)
-        result = compare_silence(file_path)
-        all_results.append(result)
-
-# Sort results by file name
-all_results.sort(key=lambda x: x["base_name"])
-
-# TSV file to save the sorted results
 tsv_file_path = "TSV/combined-tokensalign_silences_TALN.tsv"
 
-with open(tsv_file_path, 'w', newline='') as file:
-    writer = csv.writer(file, delimiter='\t')
-    writer.writerow(['File Name', 'Combined Silences', 'TokensAlign Silences', 'Overlapping Silences', 'More Silence in Combined'])
-    # writer.writerow(['', 'Start Time', 'End Time', 'TokensAlign Start Time', 'TokensAlign End Time'])
+# Prepare global TSV writer
+with open(tsv_file_path, 'w', newline='') as global_file:
+    global_writer = csv.writer(global_file, delimiter='\t')
+    global_writer.writerow(['File Name', 'Combined Silences', 'TokensAlign Silences', 'Exact Matches', 'Partial Overlaps', 'Unique Combined', 'Unique TokensAlign'])
 
-    more_combined_silence_count = 0
-    for result in all_results:
-        writer.writerow([result["base_name"], result["combined_silences"], result["tokensalign_silences"], len(result["overlaps"]), result["more_silence_in_combined"]])
-        # for overlap in result["overlaps"]:
-        #     writer.writerow(['Overlap', overlap[0], overlap[1], overlap[2], overlap[3]])
-        if result["more_silence_in_combined"]:
-            more_combined_silence_count += 1
+    # Process each TextGrid file
+    for file in os.listdir(folder_path):
+        if file.endswith(".TextGrid"):
+            file_path = os.path.join(folder_path, file)
+            compare_silence(file_path, global_writer)
 
-    writer.writerow(['Total files with more silence in Combined:', '', '', '', more_combined_silence_count])
-
-print(f"Results saved to {tsv_file_path}")
+print(f"Global results saved to {tsv_file_path}")
