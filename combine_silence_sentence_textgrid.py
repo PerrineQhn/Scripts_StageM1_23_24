@@ -3,7 +3,6 @@ import textgrid
 from tqdm import tqdm
 import os
 
-
 def fill_gaps_with_silence(tier, max_timestamp):
     new_intervals = []
     last_end = 0
@@ -22,6 +21,7 @@ def fill_gaps_with_silence(tier, max_timestamp):
 
     # Update the tier with the new intervals
     tier.entryList = new_intervals
+
 
 def pitchtier_verify_silence(pitch_file, start, end):
     point_count = 0  # Compteur pour les points de pitch
@@ -72,6 +72,7 @@ def align_silence(ipus_path, tokens_path):
     # Save or return the modified TextGrid
     textgrid_tokens.tierDict['Combined'] = combined_tier
     return textgrid_tokens
+
 
 def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None):
     base_name = os.path.splitext(os.path.basename(sent_path))[0]
@@ -203,7 +204,6 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
         if updated_start < updated_end:
             syll_intervals.append([updated_start, updated_end, syll_label])
         elif updated_start > updated_end:
-            # Log ou gérer l'anomalie ici
             print(f"Anomalie : start={updated_start}, end={updated_end}, label={syll_label}")
 
     # Créer le tier combiné et l'ajouter au TextGrid
@@ -228,9 +228,9 @@ all_phrases_with_hash = []
 
 
 # # Test the functions
-# create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./Praat/ABJ_GWA_06_Ugo_Lifestory_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syll.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
-# align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
-# detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
+# create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-id.TextGrid", "./Praat/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syll.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
+# align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
+# detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
 
 # Iterate through all the subfolders
 for subdir in tqdm(os.listdir(base_folder)):

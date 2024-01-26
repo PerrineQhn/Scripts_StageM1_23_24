@@ -109,6 +109,18 @@ def create_textgrid(file_path, output_textgrid_path):
     textgrid.save(output_textgrid_path)
 
 
+def preprocess_text_list(text_list):
+    # This function will expand contractions found in text_list to match the tokenization of tree.words
+    new_text_list = []
+    contractions = {"don't": ["do", "n't"]}
+    for word in text_list:
+        if word.lower() in contractions:  # Added lower() for case insensitivity
+            new_text_list.extend(contractions[word.lower()])
+        else:
+            new_text_list.append(word)
+    return new_text_list
+
+
 def create_textgrid_taln(file_path, output_textgrid_path):
     """
     Creates a TextGrid file from a CoNLL-U formatted file.
@@ -124,9 +136,10 @@ def create_textgrid_taln(file_path, output_textgrid_path):
     intervals = []
     for tree_pos, tree in enumerate(trees):
         line = str(tree)
-        print(line)
+        # print(line)
         text_match = re.search(r'# text = (.+)', line)
         text_list = text_match.group(1).split()
+        text_list = preprocess_text_list(text_list)
         # print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         # print(text_list)
         misc_list = []
@@ -154,27 +167,22 @@ def create_textgrid_taln(file_path, output_textgrid_path):
 
             if words[i] != "#":
                 sentence.append(words[i])
+
             if words[i] == "#" or i == len(words) - 1:
                 if sentence:
                     # print('sentence: ', sentence)
-                    # for j in range(len(sentence)):
-                    #     key = i_text + j + 1
-                    #     if key in tree and tree[key].get("tag") != "PUNCT":
-                    #         # print(j)
-                    #         # print(tree[key].get("tag"))
-                    #         sentence_without_punc = sentence[j]
-                            
                     sentence_without_punc = [sentence[j] for j in range(len(sentence)) if tree[(i_text + j+1)].get("tag") != "PUNCT"]
-                    # put the words of the sentence into a string
                     current_text = " ".join(sentence_without_punc)
+                    # print('current_text (no punc):', current_text)
                     start = i_text
                     while i_text < len(text_list):
-                        #print("text_list[i_text]:", text_list[i_text], "sentence[-1]:", sentence[-1], "i_text - start +1:", i_text - start +1, "len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
+                        # print("text_list[i_text]:", text_list[i_text], "sentence[-1]:", sentence[-1], "i_text - start +1:", i_text - start +1, "len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
                         if len(sentence) == 1 and text_list[i_text] != "#":
                             align_begin = misc_list[i_text].get(i_text + 1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
                             align_end = misc_list[i_text].get(i_text + 1).get("AlignEnd")
                             current_xmax = int(align_end) / 1000
+                            # print(current_xmin, current_xmax, current_text)
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
                             i_text += 1
@@ -187,7 +195,8 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                                 pos = tree[temp_i_text+1].get("tag")
                             align_begin = misc_list[temp_i_text].get(temp_i_text+1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
-                        elif text_list[i_text] == sentence[-1] and i_text - start +1 == len(sentence):
+                            # print(sentence)
+                        elif text_list[i_text] == sentence[-1] and i_text - start + 1 == len(sentence):
                             # print(sentence)
                             temp_i_text = i_text
                             pos = tree[temp_i_text+1].get("tag")
@@ -220,8 +229,9 @@ for fichier in os.listdir(dossier_conllu):
         else:
             folder = '_'.join(nom_fichier_sans_extension.split('_')[:2])
 
-        print(nom_fichier_sans_extension)
+        # print(nom_fichier_sans_extension)
         # chemin_textgrid = os.path.join('', f'./TEXTGRID_WAV_nongold/{folder}/{nom_fichier_sans_extension}.TextGrid')
+
         chemin_textgrid = os.path.join('', f'./TEXTGRID_WAV_gold_non_gold_TALN/{folder}/{nom_fichier_sans_extension}.TextGrid')
         
 
