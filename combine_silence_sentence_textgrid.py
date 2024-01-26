@@ -73,7 +73,6 @@ def align_silence(ipus_path, tokens_path):
     textgrid_tokens.tierDict['Combined'] = combined_tier
     return textgrid_tokens
 
-
 def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None):
     base_name = os.path.splitext(os.path.basename(sent_path))[0]
 
@@ -128,22 +127,26 @@ def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None
     return phrases_with_hash
 
 
-def create_tier(ipus_path, tokens_path, pitch_path, output_path):
-    # Open the TextGrid files
+def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
+    # Ouvrir les fichiers TextGrid
     textgrid_ipus = tgio.openTextgrid(ipus_path)
     textgrid_tokens = tgio.openTextgrid(tokens_path)
+    textgrid_syl = tgio.openTextgrid(syllabes_path)
 
-    # Create a new TextGrid object for the combined intervals
+    # Créer un nouvel objet TextGrid pour les intervalles combinés
     combined_textgrid = tgio.Textgrid()
 
     combine_intervals = []
+    syll_intervals = []
 
-    # Get the intervals from the 'IPUs' and 'TokensAlign' tiers
+    # Obtenir les intervalles des tiers 'IPUs', 'TokensAlign' et 'SyllAlign'
     ipus_tier = textgrid_ipus.tierDict['IPUs']
     tokens_tier = textgrid_tokens.tierDict['TokensAlign']
+    syllabes_tier = textgrid_syl.tierDict['SyllAlign']
 
     ipus_intervals = ipus_tier.entryList
     tokens_intervals = tokens_tier.entryList
+    syllabes_intervals = syllabes_tier.entryList
 
     # Process each token interval
     for token in tokens_intervals:
@@ -175,12 +178,45 @@ def create_tier(ipus_path, tokens_path, pitch_path, output_path):
             # Log or handle the anomaly here
             print(f"Anomaly : start={updated_start}, end={updated_end}, label={token_label}")
 
+    # Processus pour chaque intervalle de syllabe
+    for syllabe in syllabes_intervals:
+        syll_start, syll_end, syll_label = syllabe
 
-    # Create the combined tier and add it to the TextGrid
+        # Initialiser les temps de début et de fin mis à jour pour la syllabe
+        updated_start = syll_start
+        updated_end = syll_end
+        silence_in_syllabe = False
+
+        # Vérifier les silences à l'intérieur de l'intervalle de la syllabe
+        for ipu in ipus_intervals:
+            ipu_start, ipu_end, ipu_label = ipu
+            if ipu_label == '#' and syll_start < ipu_end and syll_end > ipu_start:
+                is_silence = pitchtier_verify_silence(pitch_path, ipu_start, ipu_end)
+                if is_silence:
+                    silence_in_syllabe = True
+                    if (ipu_start - syll_start) > (syll_end - ipu_end):
+                        updated_end = min(ipu_start, updated_end)
+                    else:
+                        updated_start = max(ipu_end, updated_start)
+
+        # Ajouter soit un silence soit une syllabe basée sur la vérification
+        if updated_start < updated_end:
+            syll_intervals.append([updated_start, updated_end, syll_label])
+        elif updated_start > updated_end:
+            # Log ou gérer l'anomalie ici
+            print(f"Anomalie : start={updated_start}, end={updated_end}, label={syll_label}")
+
+    # Créer le tier combiné et l'ajouter au TextGrid
     combined_tier = tgio.IntervalTier("Combined", combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+    syll_sil = tgio.IntervalTier("SyllSil", syll_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+
     combined_textgrid.addTier(combined_tier)
+    combined_textgrid.addTier(syll_sil)
+
     fill_gaps_with_silence(combined_tier, combined_textgrid.maxTimestamp)
-    # Save the new TextGrid
+    fill_gaps_with_silence(syll_sil, combined_textgrid.maxTimestamp)
+
+    # Sauvegarder le nouveau TextGrid
     combined_textgrid.save(output_path)
 
 # base_folder = "./TEXTGRID_WAV_nongold/"
@@ -192,72 +228,78 @@ all_phrases_with_hash = []
 
 
 # # Test the functions
-create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./Praat/ABJ_GWA_06_Ugo_Lifestory_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
-align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
-detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
+# create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./Praat/ABJ_GWA_06_Ugo_Lifestory_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syll.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
+# align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
+# detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_06/ABJ_GWA_06_Ugo-Lifestory_MG-syl_tok.TextGrid")
 
-# # Iterate through all the subfolders
-# for subdir in tqdm(os.listdir(base_folder)):
-#     subdir_path = os.path.join(base_folder, subdir)
+# Iterate through all the subfolders
+for subdir in tqdm(os.listdir(base_folder)):
+    subdir_path = os.path.join(base_folder, subdir)
 
-#     # Check if the item is a folder
-#     if os.path.isdir(subdir_path):
-#         # List to store the names of .TextGrid files
-#         ipus_files = []
-#         id_files = []
-#         sent_files = []
+    # Check if the item is a folder
+    if os.path.isdir(subdir_path):
+        # List to store the names of .TextGrid files
+        ipus_files = []
+        id_files = []
+        sent_files = []
+        syll_files = []
 
-#         # Iterate through all files in the subfolder
-#         for file in os.listdir(subdir_path):
-#             # print(file)
-#             # if file.endswith("_M-ipus.TextGrid"):
-#             if file.endswith("_MG-ipus.TextGrid"):
-#                 ipus_files.append(file)
-#             # elif file.endswith("_M-id.TextGrid"):
-#             elif file.endswith("_MG-id.TextGrid"):
-#                 id_files.append(file)
-#             # elif file.endswith("_M.TextGrid"):
-#             elif file.endswith("_MG.TextGrid"):
-#                 sent_files.append(file)
+        # Iterate through all files in the subfolder
+        for file in os.listdir(subdir_path):
+            # print(file)
+            # if file.endswith("_M-ipus.TextGrid"):
+            if file.endswith("_MG-ipus.TextGrid"):
+                ipus_files.append(file)
+            # elif file.endswith("_M-id.TextGrid"):
+            elif file.endswith("_MG-id.TextGrid"):
+                id_files.append(file)
+            elif file.endswith("_MG-syll.TextGrid"):
+                syll_files.append(file)
+            # elif file.endswith("_M.TextGrid"):
+            elif file.endswith("_MG.TextGrid"):
+                sent_files.append(file)
 
-#         # Process the files if they are present
-#         for ipus_file in ipus_files:
-#             # Construct the paths to the ipus and id TextGrids
-#             ipus_textgrid_path = os.path.join(subdir_path, ipus_file)
-#             # id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
-#             # sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
-#             id_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-id.TextGrid")
-#             sent_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.TextGrid")
-#             sent_textgrid_path = None
+        # Process the files if they are present
+        for ipus_file in ipus_files:
+            # Construct the paths to the ipus and id TextGrids
+            ipus_textgrid_path = os.path.join(subdir_path, ipus_file)
+            # id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
+            # sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
+            id_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-id.TextGrid")
+            sent_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.TextGrid")
+            syll_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-syll.TextGrid")
+            sent_textgrid_path = None
 
-#             # Construire le chemin vers le fichier PitchTier correspondant
-#             # pitchtier_file_name = ipus_file.replace("_M-ipus.TextGrid", "_M.PitchTier")
-#             pitchtier_file_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.PitchTier")
-#             pitchtier_path = os.path.join(pitchtier_folder, pitchtier_file_name)
+            # Construire le chemin vers le fichier PitchTier correspondant
+            # pitchtier_file_name = ipus_file.replace("_M-ipus.TextGrid", "_M.PitchTier")
+            pitchtier_file_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.PitchTier")
+            pitchtier_path = os.path.join(pitchtier_folder, pitchtier_file_name)
 
-#             # Vérifier si le fichier PitchTier existe
-#             if os.path.exists(pitchtier_path):
-#                 for sent_file in sent_files:
-#                     # print(sent_file, sent_textgrid_name)
-#                     if sent_file == sent_textgrid_name:
-#                         sent_textgrid_path = os.path.join(subdir_path, sent_file)
-#                         break
+            # Vérifier si le fichier PitchTier existe
+            if os.path.exists(pitchtier_path):
+                for sent_file in sent_files:
+                    # print(sent_file, sent_textgrid_name)
+                    if sent_file == sent_textgrid_name:
+                        sent_textgrid_path = os.path.join(subdir_path, sent_file)
+                        break
 
-#                 if id_textgrid_name in id_files and sent_textgrid_path is not None:
-#                     id_textgrid_path = os.path.join(subdir_path, id_textgrid_name)
-#                     # print(id_textgrid_path)
-#                     # Construct the output path for syl_tok tier
-#                     # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
-#                     syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid")
-#                     # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
+                if id_textgrid_name in id_files and sent_textgrid_path is not None:
+                    id_textgrid_path = os.path.join(subdir_path, id_textgrid_name)
+                    # print(id_textgrid_path)
+                    syll_textgrid_path = os.path.join(subdir_path, syll_textgrid_name)
 
-#                     # Create the syl_tok tier and align the silences
-#                     create_tier(ipus_textgrid_path, id_textgrid_path, pitchtier_path, syl_tok_output_path)
-#                     align_silence(ipus_textgrid_path, syl_tok_output_path)
-#                     phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
-#                     all_phrases_with_hash.extend(phrases_with_hash)
-#                 else:
-#                     print(f"PitchTier file not found for {ipus_file}\n")
+                    # Construct the output path for syl_tok tier
+                    # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
+                    syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid")
+                    # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
+
+                    # Create the syl_tok tier and align the silences
+                    create_tier(ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
+                    align_silence(ipus_textgrid_path, syl_tok_output_path)
+                    phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
+                    all_phrases_with_hash.extend(phrases_with_hash)
+                else:
+                    print(f"PitchTier file not found for {ipus_file}\n")
 
 # # Write the accumulated results to a TSV file
 # output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
