@@ -153,7 +153,7 @@ def generate_tiers_selection_gold_non_gold_silence(directory, directory_gold):
         if file.endswith('.TextGrid'):
             # Tiers for syllable alignment
             if 'MG-syl_tok.TextGrid' in file:
-                tiers_combined[file] = ['Combined']
+                tiers_combined[file] = ['Combined', 'SyllSil']
                 # print(file)
     
     for file in sorted(os.listdir(directory_gold)):
@@ -164,6 +164,8 @@ def generate_tiers_selection_gold_non_gold_silence(directory, directory_gold):
             elif 'MG-id.TextGrid' in file:
                 tiers[file] = ['index']
                 #print(file)
+            elif 'MG-syll.TextGrid' in file:
+                tiers[file] = ['SyllAlign']
             # Transcription tiers
             elif not any(substring in file for substring in ['MG-phon.TextGrid', 'MG-token.TextGrid', 'merged', 'MG-syll.TextGrid', 'MG-id.TextGrid', 'MG-syl_tok.TextGrid']):
                 tiers[file] = ['trans']
@@ -182,19 +184,19 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
     :param merged: Destination folder for the merged file (optional).
     """
     merged_textgrid = textgrid.TextGrid()
-    tier_order = ['trans', 'TokensAlign', 'index', 'Combined']
+    tier_order = ['trans', 'TokensAlign', 'SyllAlign', 'index', 'Combined', 'SyllSil']
     added_tiers = set()  # To track already added tiers
 
     for tier_name in tier_order:
-        for file, tiers_list in (tiers.items() if tier_name != 'Combined' else tiers_combined.items()):
+        for file, tiers_list in (tiers.items() if tier_name != 'Combined' and tier_name != 'SyllSil' else tiers_combined.items()):
             # print(file, tiers_list)
-            directory_used = directory_gold if tier_name != 'Combined' else directory
+            directory_used = directory_gold if tier_name != 'Combined' and tier_name != 'SyllSil' else directory
             for tier in tiers_list:
                 if tier_name not in added_tiers:  # Check if the tier has already been added
                     tg = textgrid.TextGrid.fromFile(os.path.join(directory_used, file))
-                    tier = tg.getFirst(tier_name)
-                    if tier is not None:
-                        merged_textgrid.append(tier)
+                    current_tier = tg.getFirst(tier_name)
+                    if current_tier is not None:
+                        merged_textgrid.append(current_tier)
                         added_tiers.add(tier_name)
                 # else:
                 #     print(f"Tier '{tier_name}' not found in file: {file}")
@@ -204,7 +206,6 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
         merged_textgrid.write(os.path.join(merged, f'{base_name_file}-merged.TextGrid'))
     else:
         merged_textgrid.write(os.path.join(directory, f'{base_name_file}-merged.TextGrid'))
-
 
 
 # base_folder = './TEXTGRID_WAV'
