@@ -2,6 +2,7 @@ from praatio import tgio
 import os
 import csv
 
+
 def compare_silence(file_path, global_writer):
     textgrid_sil = tgio.openTextgrid(file_path)
     
@@ -25,7 +26,7 @@ def compare_silence(file_path, global_writer):
 
     # Write individual file details
     base_name = os.path.splitext(os.path.basename(file_path))[0]
-    individual_tsv_path = os.path.join("TSV", base_name + "_details.tsv")
+    individual_tsv_path = os.path.join("TSV/silence_details_TALN", base_name + "_details.tsv")
     with open(individual_tsv_path, 'w', newline='') as file:
         individual_writer = csv.writer(file, delimiter='\t')
         individual_writer.writerow(['Category', 'Start Time', 'End Time'])
