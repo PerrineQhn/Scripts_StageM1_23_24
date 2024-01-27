@@ -121,6 +121,7 @@ def preprocess_text_list(text_list):
     return new_text_list
 
 
+
 def create_textgrid_taln(file_path, output_textgrid_path):
     """
     Creates a TextGrid file from a CoNLL-U formatted file.
@@ -176,6 +177,7 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                     # print('current_text (no punc):', current_text)
                     start = i_text
                     while i_text < len(text_list):
+                        # print(current_text)
                         # print("text_list[i_text]:", text_list[i_text], "sentence[-1]:", sentence[-1], "i_text - start +1:", i_text - start +1, "len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
                         if len(sentence) == 1 and text_list[i_text] != "#":
                             align_begin = misc_list[i_text].get(i_text + 1).get("AlignBegin")
@@ -243,6 +245,7 @@ for fichier in os.listdir(dossier_conllu):
         # if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
         # create_textgrid(chemin_conllu, chemin_textgrid)
         # print(chemin_textgrid)
-        create_textgrid_taln(chemin_conllu, chemin_textgrid)  
+        if nom_fichier_sans_extension == 'ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG':
+            create_textgrid_taln(chemin_conllu, chemin_textgrid)  
 
 print("Done !")
