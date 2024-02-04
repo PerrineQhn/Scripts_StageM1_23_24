@@ -35,6 +35,7 @@ for subdir in tqdm(os.listdir(base_folder)):
                 textgrid_file_path = os.path.join(subdir_path, textgrid_file)
 
                 # Construct and execute the first command
+                # if wav_file_path == "./TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.wav":
                 command1 = f"python3 ./SPPAS-4/sppas/bin/searchipus.py -I {wav_file_path} -e .TextGrid --min_ipu 0.02 --min_sil 0.1"
                 subprocess.run(command1, shell=True)
 

@@ -112,7 +112,17 @@ def create_textgrid(file_path, output_textgrid_path):
 def preprocess_text_list(text_list):
     # This function will expand contractions found in text_list to match the tokenization of tree.words
     new_text_list = []
-    contractions = {"don't": ["do", "n't"]}
+    contractions = {
+        "don't": ["do", "n't"],
+        "it's": ["it", " 's"], 
+        "i'm": ["i", " 'm"],
+        "what's": ["what", " 's"],
+        "can't": ["ca", "n't"],
+        "cannot": ["can", "not"],
+        "we're": ["we", " 're"],
+        "dat's": ["dat", " 's"],
+        "didn't": ["did", "n't"],
+    }
     for word in text_list:
         if word.lower() in contractions:  # Added lower() for case insensitivity
             new_text_list.extend(contractions[word.lower()])
@@ -169,17 +179,20 @@ def create_textgrid_taln(file_path, output_textgrid_path):
             if words[i] != "#":
                 sentence.append(words[i])
 
-            if words[i] == "#" or i == len(words) - 1:
+            if i == len(words) - 1:
                 if sentence:
                     # print('sentence: ', sentence)
                     sentence_without_punc = [sentence[j] for j in range(len(sentence)) if tree[(i_text + j+1)].get("tag") != "PUNCT"]
                     current_text = " ".join(sentence_without_punc)
-                    # print('current_text (no punc):', current_text)
+                    print('\n ###############################################')
+                    print('current_text (no punc):', current_text)
                     start = i_text
+                    
                     while i_text < len(text_list):
+                        print(i_text - start + 1, len(sentence))
                         # print(current_text)
-                        # print("text_list[i_text]:", text_list[i_text], "sentence[-1]:", sentence[-1], "i_text - start +1:", i_text - start +1, "len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
-                        if len(sentence) == 1 and text_list[i_text] != "#":
+                        print("text_list[i_text]:", text_list[i_text], " | sentence[-1]:", sentence[-1], " | i_text - start +1:", i_text - start +1, " | len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
+                        if len(sentence) == 1:
                             align_begin = misc_list[i_text].get(i_text + 1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
                             align_end = misc_list[i_text].get(i_text + 1).get("AlignEnd")
@@ -189,20 +202,24 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
                             i_text += 1
                             break
+
                         elif text_list[i_text] == sentence[0] and start == i_text:
                             pos = tree[i_text+1].get("tag")
                             temp_i_text = i_text
-                            while pos == "PUNCT" and words[i_text] != "#":
+                            while pos == "PUNCT":
                                 temp_i_text += 1
                                 pos = tree[temp_i_text+1].get("tag")
                             align_begin = misc_list[temp_i_text].get(temp_i_text+1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
-                            # print(sentence)
+                            print(text_list[i_text], sentence[0], sentence[-1])
+
                         elif text_list[i_text] == sentence[-1] and i_text - start + 1 == len(sentence):
                             # print(sentence)
+                            # print(text_list[i_text], sentence[-1])
+                            # print(i_text - start + 1, len(sentence))
                             temp_i_text = i_text
                             pos = tree[temp_i_text+1].get("tag")
-                            while pos == "PUNCT" and words[i_text] != "#":
+                            while pos == "PUNCT":
                                 temp_i_text -= 1
                                 pos = tree[temp_i_text+1].get("tag")
                             align_end = misc_list[temp_i_text].get(temp_i_text+1).get("AlignEnd")
@@ -236,7 +253,6 @@ for fichier in os.listdir(dossier_conllu):
 
         chemin_textgrid = os.path.join('', f'./TEXTGRID_WAV_gold_non_gold_TALN/{folder}/{nom_fichier_sans_extension}.TextGrid')
         
-
         directory = os.path.dirname(chemin_textgrid)
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -245,7 +261,8 @@ for fichier in os.listdir(dossier_conllu):
         # if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
         # create_textgrid(chemin_conllu, chemin_textgrid)
         # print(chemin_textgrid)
-        if nom_fichier_sans_extension == 'ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG':
-            create_textgrid_taln(chemin_conllu, chemin_textgrid)  
+        # if nom_fichier_sans_extension == 'ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG':
+        create_textgrid_taln(chemin_conllu, chemin_textgrid)  
 
+# create_textgrid_taln('./SUD_Naija-NSC-master-gold-non-gold-TALN/WAZP_04_Ponzi-Scheme_MG.conllu', './TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.TextGrid')
 print("Done !")

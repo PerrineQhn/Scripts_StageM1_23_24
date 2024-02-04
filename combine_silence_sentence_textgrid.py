@@ -149,21 +149,33 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
     tokens_intervals = tokens_tier.entryList
     syllabes_intervals = syllabes_tier.entryList
 
+    last_ipus_interval = ipus_tier.entryList[-1] if ipus_tier.entryList else None
+    is_last_ipus_silence = (last_ipus_interval[2] == '#') if last_ipus_interval else False
+
     # Process each token interval
     for token in tokens_intervals:
         token_start, token_end, token_label = token
+        updated_start, updated_end = token_start, token_end
+        # print(f"Token: {token_label}, Start: {token_start}, End: {token_end}")
+
 
         # Initialize the updated start and end times for the token
-        updated_start = token_start
-        updated_end = token_end
         silence_in_token = False
 
         # Check for silences within the token interval
         for ipu in ipus_intervals:
             ipu_start, ipu_end, ipu_label = ipu
+            # print(f"IPU: {ipu_label}, Start: {ipu_start}, End: {ipu_end}")
+
             if ipu_label == '#' and token_start < ipu_end and token_end > ipu_start:
+                # Skip silence adjustment if this is the last ipus interval
+                if (ipu_start, ipu_end) == (last_ipus_interval[0], last_ipus_interval[1]) and is_last_ipus_silence:
+                    continue
+
                 # Utiliser la fonction mise à jour pour vérifier le silence
                 is_silence = pitchtier_verify_silence(pitch_path, ipu_start, ipu_end)
+                # print(f"Silence detected: {is_silence} between {ipu_start} and {ipu_end}")
+
                 if is_silence:  # Si c'est un silence
                     silence_in_token = True
                     # Ajuster les bornes du token pour exclure le silence
@@ -192,6 +204,9 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
         for ipu in ipus_intervals:
             ipu_start, ipu_end, ipu_label = ipu
             if ipu_label == '#' and syll_start < ipu_end and syll_end > ipu_start:
+                # Skip silence adjustment if this is the last ipus interval
+                if (ipu_start, ipu_end) == (last_ipus_interval[0], last_ipus_interval[1]) and is_last_ipus_silence:
+                    continue
                 is_silence = pitchtier_verify_silence(pitch_path, ipu_start, ipu_end)
                 if is_silence:
                     silence_in_syllabe = True
@@ -227,10 +242,10 @@ pitchtier_folder = "./Praat/"
 all_phrases_with_hash = [] 
 
 
-# # Test the functions
-# create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-id.TextGrid", "./Praat/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syll.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
-# align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
-# detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-syl_tok.TextGrid")
+# Test the functions
+# create_tier("./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-id.TextGrid", "./Praat/JOS_01_People-Of-Plateau_MG.PitchTier", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-syll.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-syl_tok.TextGrid")
+# align_silence("./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-ipus.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-syl_tok.TextGrid")
+# detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-syl_tok.TextGrid")
 
 # Iterate through all the subfolders
 for subdir in tqdm(os.listdir(base_folder)):
@@ -301,8 +316,8 @@ for subdir in tqdm(os.listdir(base_folder)):
                 else:
                     print(f"PitchTier file not found for {ipus_file}\n")
 
-# # Write the accumulated results to a TSV file
-# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
-# with open(output_tsv_path, 'w', encoding='utf-8') as f:
-#     for item in all_phrases_with_hash:
-#         f.write('\t'.join(item) + '\n')
+# Write the accumulated results to a TSV file
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
+with open(output_tsv_path, 'w', encoding='utf-8') as f:
+    for item in all_phrases_with_hash:
+        f.write('\t'.join(item) + '\n')
