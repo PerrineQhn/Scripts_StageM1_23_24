@@ -460,7 +460,6 @@ def write_to_tsv(gold_sentences, non_gold_sentences, output_file_path, filename=
 
 
 def main():
-
     # Chemins des répertoires
     gold_dir = "SUD_Naija-NSC-master/"
     non_gold_dir = "SUD_Naija-NSC-master-gold-non-gold-TALN/"
@@ -487,9 +486,9 @@ def main():
 
             textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok.TextGrid')
 
-            output_tsv_file_path = os.path.join(output_dir, 'compare_gold_non_gold_' + base_name + '.tsv')
+            output_tsv_file_path = os.path.join(output_dir, base_name + '.tsv')
             output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
-            
+
             if not os.path.exists(output_global_tsv_file_path):
                 with open(output_global_tsv_file_path, 'w', newline='', encoding='utf-8') as file:
                     writer = csv.writer(file, delimiter='\t')

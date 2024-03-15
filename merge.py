@@ -169,7 +169,7 @@ def generate_tiers_selection_gold_non_gold_silence(directory, directory_gold):
             # Transcription tiers
             elif not any(substring in file for substring in ['MG-phon.TextGrid', 'MG-token.TextGrid', 'merged', 'MG-syll.TextGrid', 'MG-id.TextGrid', 'MG-syl_tok.TextGrid']):
                 tiers[file] = ['trans']
-                #print(file)
+                # print(file)
 
     return tiers, tiers_combined
 
@@ -192,7 +192,9 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
             # print(file, tiers_list)
             directory_used = directory_gold if tier_name != 'Combined' and tier_name != 'SyllSil' else directory
             for tier in tiers_list:
+                # print(tier)
                 if tier_name not in added_tiers:  # Check if the tier has already been added
+                    # print(f"Adding tier '{tier_name}' from file: {directory_used}, {file}")
                     tg = textgrid.TextGrid.fromFile(os.path.join(directory_used, file))
                     current_tier = tg.getFirst(tier_name)
                     if current_tier is not None:
@@ -214,9 +216,9 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
 # base_folder = './TEXTGRID_WAV_nongold'
 # merged = './MERGED/non_gold'
 
-base_folder = './TEXTGRID_WAV_gold_non_gold_TALN'
-base_folder_gold = './TEXTGRID_WAV'
-merged = './MERGED/gold_non_gold'
+base_folder = 'TEXTGRID_WAV_gold_non_gold_TALN/'
+base_folder_gold = 'TEXTGRID_WAV/'
+merged = 'MERGED/gold_non_gold/'
 
 for subdir in os.listdir(base_folder):
     subdir_path = os.path.join(base_folder, subdir)
@@ -228,9 +230,10 @@ for subdir in os.listdir(base_folder):
         # merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
         
         # tiers_trans, other_tiers = generate_tiers_selection_non_gold_silence(subdir_path)
-        # print(textgrid)
         # merge_textgrid_non_gold_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
 
+        # print(subdir_path)
         gold_file = os.path.join(base_folder_gold, base_name_file)
         tiers, tiers_combined = generate_tiers_selection_gold_non_gold_silence(subdir_path, gold_file)
+        # print(tiers, tiers_combined)
         merge_gold_non_gold(subdir_path, gold_file, tiers, tiers_combined, base_name_file, merged)

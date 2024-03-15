@@ -248,7 +248,7 @@ all_phrases_with_hash = []
 # detect_silence_in_sentence("./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-id.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG.TextGrid", "./TEXTGRID_WAV_gold_non_gold_TALN/JOS_01/JOS_01_People-Of-Plateau_MG-syl_tok.TextGrid")
 
 # Iterate through all the subfolders
-for subdir in tqdm(os.listdir(base_folder)):
+for subdir in tqdm(sorted(os.listdir(base_folder))):
     subdir_path = os.path.join(base_folder, subdir)
 
     # Check if the item is a folder
@@ -317,7 +317,7 @@ for subdir in tqdm(os.listdir(base_folder)):
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Write the accumulated results to a TSV file
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
 with open(output_tsv_path, 'w', encoding='utf-8') as f:
     for item in all_phrases_with_hash:
         f.write('\t'.join(item) + '\n')
