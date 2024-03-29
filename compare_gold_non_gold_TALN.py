@@ -484,10 +484,12 @@ def main():
             else:
                 folder = '_'.join(base_name.split('_')[:2])
 
-            textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok.TextGrid')
+            # textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok.TextGrid')
+            textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok-15mars.TextGrid')
 
             output_tsv_file_path = os.path.join(output_dir, base_name + '.tsv')
-            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
+            # output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
+            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences-15mars.tsv')
 
             if not os.path.exists(output_global_tsv_file_path):
                 with open(output_global_tsv_file_path, 'w', newline='', encoding='utf-8') as file:

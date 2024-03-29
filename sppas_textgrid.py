@@ -21,7 +21,7 @@ for subdir in tqdm(os.listdir(base_folder)):
         for file in os.listdir(subdir_path):
             if file.endswith(".wav"):
                 wav_files.append(file)
-            elif file.endswith(".TextGrid"):
+            elif file.endswith("MG.TextGrid"):
                 textgrid_files.append(file)
 
         # Execute the command for each pair of corresponding files

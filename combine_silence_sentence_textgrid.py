@@ -24,6 +24,14 @@ def fill_gaps_with_silence(tier, max_timestamp):
 
 
 def pitchtier_verify_silence(pitch_file, start, end):
+    # # Calculer la durée de l'intervalle
+    # interval_duration = end - start
+
+    # # Vérifier si la durée est supérieure à 0.15 seconde
+    # if interval_duration <= 0.15:
+    #     # Considérer comme non silencieux directement
+    #     return False
+    
     point_count = 0  # Compteur pour les points de pitch
 
     # Open the pitch file
@@ -129,6 +137,7 @@ def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None
 
 
 def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
+    # print(ipus_path, tokens_path, pitch_path, syllabes_path, output_path)
     # Ouvrir les fichiers TextGrid
     textgrid_ipus = tgio.openTextgrid(ipus_path)
     textgrid_tokens = tgio.openTextgrid(tokens_path)
@@ -306,6 +315,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     # Construct the output path for syl_tok tier
                     # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
                     syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid")
+                    # syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok-15mars.TextGrid")
                     # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
 
                     # Create the syl_tok tier and align the silences
@@ -317,7 +327,8 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Write the accumulated results to a TSV file
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
+# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
 with open(output_tsv_path, 'w', encoding='utf-8') as f:
     for item in all_phrases_with_hash:
         f.write('\t'.join(item) + '\n')
