@@ -90,6 +90,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                             idx_word_try += 1
                         current_try += 1
                     print('current_try < try_time: ',current_try, try_time)
+
                     if current_try < try_time:  # #hide somethings
                         if idx_sentences_list < len(sentences_list)-2 and sentences_list[idx_sentences_list].upper() == sentences_list[idx_sentences_list+2].upper() and sentences_list[idx_sentences_list+1].upper() == sentences_list[idx_sentences_list+3].upper()\
                                 and sentences_list[idx_sentences_list].upper() == tier[i + 1][0].upper() and sentences_list[idx_sentences_list].upper() != 'HOUSE'and sentences_list[idx_sentences_list].upper() != 'PEPPER' :
@@ -485,11 +486,11 @@ def main():
                 folder = '_'.join(base_name.split('_')[:2])
 
             # textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok.TextGrid')
-            textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok-15mars.TextGrid')
+            textgrid_file = os.path.join(textgrid_dir, folder + '/' + base_name + '-syl_tok.TextGrid')
 
             output_tsv_file_path = os.path.join(output_dir, base_name + '.tsv')
             # output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
-            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences-15mars.tsv')
+            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences-02avril.tsv')
 
             if not os.path.exists(output_global_tsv_file_path):
                 with open(output_global_tsv_file_path, 'w', newline='', encoding='utf-8') as file:
@@ -498,19 +499,55 @@ def main():
 
             if non_gold_file in non_gold_files:
                 print(f"Traitement de {base_name}")
+                # print(f"Gold: {gold_file}")
+                list_file = [
+                    'SUD_Naija-NSC-master/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_06_Ugo-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_08_David-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_09_Journalism_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_10_Steven-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_12_Accident_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_14_Mary-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_INF_10_Women-Battering_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_INF_12_Evictions_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_NOU_02_Gimba-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/BEN_08_Egusi-And-Banga-Soup_MG.conllu',
+                    'SUD_Naija-NSC-master/BEN_14_BronzeFM-News_MG.conllu',
+                    'SUD_Naija-NSC-master/BEN_36_Clever-Girl_MG.conllu',
+                    'SUD_Naija-NSC-master/ENU_01_Salomis-Egusi-Soup-Recipe_MG.conllu',
+                    'SUD_Naija-NSC-master/IBA_03_Womanisers_MG.conllu',
+                    'SUD_Naija-NSC-master/IBA_04_Alaska-Pepe_MG.conllu',
+                    'SUD_Naija-NSC-master/IBA_20_Bose-Alade_MG.conllu',
+                    'SUD_Naija-NSC-master/IBA_32_Tori-By-Samuel_MG.conllu',
+                    'SUD_Naija-NSC-master/JOS_01_People-Of-Plateau_MG.conllu',
+                    'SUD_Naija-NSC-master/KAD_09_Kabir-Gymnasium_MG.conllu',
+                    'SUD_Naija-NSC-master/KAD_13_Entering-University_MG.conllu',
+                    'SUD_Naija-NSC-master/LAG_07_Johns-Biography_MG.conllu',
+                    'SUD_Naija-NSC-master/LAG_11_Adeniyi-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/LAG_37_Soap-Making_MG.conllu',
+                    'SUD_Naija-NSC-master/ONI_07_Dis-Year-Na-My-Year_MG.conllu',
+                    'SUD_Naija-NSC-master/ONI_10_Sport-Commentary_MG.conllu',
+                    'SUD_Naija-NSC-master/ONI_27_A-Hotelier-Interview_MG.conllu',
+                    'SUD_Naija-NSC-master/PRT_02_Food-And-Health_MG.conllu',
+                    'SUD_Naija-NSC-master/WAZA_01_Triplea-Sports_MG.conllu',
+                    'SUD_Naija-NSC-master/WAZA_08_Body-Matter_MG.conllu',
+                    'SUD_Naija-NSC-master/WAZL_08_Edewor-Lifestory_MG.conllu',
+                    'SUD_Naija-NSC-master/WAZL_15_MC-Abi_MG.conllu',
+                    'SUD_Naija-NSC-master/WAZP_03_Education_MG.conllu'
+                            ]
+                
+                if gold_file not in list_file:
+                    if "WAZP_07" in gold_file: 
+                        gold_sentences = extract_sentences(gold_file)
+                        new_gold_sentences = [' '.join(sentence) for sentence in gold_sentences]
 
-                # if gold_file not in list_file:
-                # if "WAZL" in gold_file: 
-                gold_sentences = extract_sentences(gold_file)
-                new_gold_sentences = [' '.join(sentence) for sentence in gold_sentences]
+                        tier_combined = extract_token_and_pause_times(textgrid_file)
+                        non_gold_sentences = extract_sentences(non_gold_file)
+                        adjusted_non_gold_sentences = insert_pauses_in_non_gold_sentences(non_gold_sentences, tier_combined)
 
-                tier_combined = extract_token_and_pause_times(textgrid_file)
-                non_gold_sentences = extract_sentences(non_gold_file)
-                adjusted_non_gold_sentences = insert_pauses_in_non_gold_sentences(non_gold_sentences, tier_combined)
-
-                # Writing to TSV
-                write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_tsv_file_path)
-                write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_global_tsv_file_path, filename=base_name)
+                        # Writing to TSV
+                        write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_tsv_file_path)
+                        write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_global_tsv_file_path, filename=base_name)
 
             else:
                 print(f"Fichier manquant pour {base_name}")

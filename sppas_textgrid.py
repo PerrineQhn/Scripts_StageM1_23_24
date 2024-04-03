@@ -1,11 +1,14 @@
 import os
 import subprocess
 from tqdm import tqdm
+from modif_ipus_tier import *
+
 
 # Path to the folder containing subfolders
 # base_folder = "./TEXTGRID_WAV"
 # base_folder = "./TEXTGRID_WAV_nongold"
 base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN"
+praat_folder = "./Praat"
 
 # Iterate through all the subfolders
 for subdir in tqdm(os.listdir(base_folder)):
@@ -35,10 +38,15 @@ for subdir in tqdm(os.listdir(base_folder)):
                 textgrid_file_path = os.path.join(subdir_path, textgrid_file)
 
                 # Construct and execute the first command
-                # if wav_file_path == "./TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.wav":
-                command1 = f"python3 ./SPPAS-4/sppas/bin/searchipus.py -I {wav_file_path} -e .TextGrid --min_ipu 0.02 --min_sil 0.1"
-                subprocess.run(command1, shell=True)
+                if wav_file_path == "./TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.wav":
+                    print(wav_file_path, textgrid_file_path)
+                    command1 = f"python3 ./SPPAS-4_1/sppas/bin/searchipus.py -I {wav_file_path} -e .TextGrid --min_ipu 0.02 --min_sil 0.1"
+                    subprocess.run(command1, shell=True)
 
-                command = f"python3 ./SPPAS-4/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment --syllabify"
-                subprocess.run(command, shell=True)
+                    ipu_filepath = os.path.join(subdir_path, wav_file.replace(".wav", "-ipus.TextGrid"))
+                    pitch_path = os.path.join(praat_folder, wav_file.replace(".wav", ".PitchTier"))
+                    correct_silence_duration(ipu_filepath, pitch_path, os.path.join(subdir_path, wav_file.replace(".wav", "-ipus.TextGrid")))
+
+                    command = f"python3 ./SPPAS-4_1/sppas/bin/annotation.py -I {wav_file_path} -I {textgrid_file_path} -l pcm -e .TextGrid --textnorm --phonetize --alignment --syllabify"
+                    subprocess.run(command, shell=True)
 

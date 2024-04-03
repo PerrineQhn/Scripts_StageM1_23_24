@@ -310,11 +310,38 @@ def create_textgrid(file_path, input_textgrid_path, output_textgrid_path):
 
 
 def create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path):
+    print(file_path)
     textgrid = tgio.openTextgrid(input_textgrid_path)
     tier = textgrid.tierDict['TokensAlign']
     tokens_align_intervals = tier.entryList
     index_intervals = []
     token_pos = 0
+    special_cases = [
+        "o'clock", 
+        "billionaire's", 
+        "dat's", 
+        "Africa's", 
+        "O'neill", 
+        "a'ah", 
+        "it's", 
+        "John's", 
+        "God's", 
+        "voter's", 
+        "admin's", 
+        "Zimbabwe's", 
+        "people's", 
+        "guy's",
+    ]
+    hyphenated_special_cases = [
+        "ex-soldier", 
+        "self-sufficient", 
+        "twenty-fourth", 
+        "ninety-six", 
+        "D-Morris", 
+        "Port-Harcourt",
+        "port-harcourt",
+        "d-morris"
+    ]
     trees = conllFile2trees(file_path)
     for tree_pos, tree in enumerate(trees):        
         tmp_interval = [tokens_align_intervals[token_pos][0], tokens_align_intervals[token_pos][1], tokens_align_intervals[token_pos][2]]
@@ -337,8 +364,8 @@ def create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path
                 tmp_interval[2] = tmp_interval[2].replace("{", "").replace("}", "").replace("|", "")
             
 
-            symbols_to_remove = ("]", "[", ".", ",", "<", "|c", ")", "//", "'", "||")
-            if pos != "PUNCT" and words[i].endswith(symbols_to_remove):
+            symbols_to_remove = ("]", "[", ",", ".", "<", "|c", ")", "//", "'", "||")
+            if pos != "PUNCT" and words[i].endswith(symbols_to_remove) and words[i] != "p.m." and words[i] != "a.m." and words[i] != "o.a." and words[i] != "o.d.s." and words[i] != "s.":
                 for symbol in symbols_to_remove:
                     if words[i].endswith(symbol):
                         words[i] = words[i][:-len(symbol)]
@@ -363,7 +390,7 @@ def create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path
                     token_pos += 1
                 i += 1
             
-            elif "-" in words[i] and words[i] != "vice-president" and "'" not in tokens_align_intervals[token_pos][2]:
+            elif "-" in words[i] and words[i] != "vice-president" and words[i] not in hyphenated_special_cases and "'" not in tokens_align_intervals[token_pos][2]:
                 c = words[i].split("-")
                 for x in c:
                     # print(x, tokens_align_intervals[token_pos][2])
@@ -378,19 +405,63 @@ def create_textgrid_nongold(file_path, input_textgrid_path, output_textgrid_path
                 i += 1
             
             elif "." in words[i] and "'" not in tokens_align_intervals[token_pos][2]:
-                words[i] = words[i].replace(".", " point ")
-                c = words[i].split()
-                for x in c:
-                    # print(x, tokens_align_intervals[token_pos][2])
-                    tmp_value = tokens_align_intervals[token_pos][2]
-                    if x == tmp_value:
-                        tmp_interval = [tokens_align_intervals[token_pos][0], 
-                        tokens_align_intervals[token_pos][1], 
-                        '{}.{}'.format(tree_pos + 1, i + 1)]
-                        # print(tmp_interval, x, tokens_align_intervals[token_pos][2])
+                if words[i].upper() == 'A.M.':
+                    if "A." in words[i].upper() and tmp_interval[2].upper() == "A.":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
                         index_intervals.append(tmp_interval)
-                    token_pos += 1
-                i += 1
+                        # print(tmp_interval)
+                        token_pos += 1
+                        tmp_interval = [tokens_align_intervals[token_pos][0], tokens_align_intervals[token_pos][1], tokens_align_intervals[token_pos][2]]
+
+                    if "M." in words[i].upper() and tmp_interval[2].upper() == "M.":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
+                        index_intervals.append(tmp_interval)
+                        # print(tmp_interval)
+                        token_pos += 1
+                    i += 1
+
+                elif words[i].upper() == 'O.A.':
+                    if "O." in words[i].upper() and tmp_interval[2].upper() == "O.":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
+                        index_intervals.append(tmp_interval)
+                        # print(tmp_interval)
+                        token_pos += 1
+                        tmp_interval = [tokens_align_intervals[token_pos][0], tokens_align_intervals[token_pos][1], tokens_align_intervals[token_pos][2]]
+
+                    if "A." in words[i].upper() and tmp_interval[2].upper() == "A.":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
+                        index_intervals.append(tmp_interval)
+                        # print(tmp_interval)
+                        token_pos += 1
+                    i += 1
+
+                elif words[i].upper() == 'O.D.S.':
+                    if "O." in words[i].upper() and tmp_interval[2].upper() == "O.":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
+                        index_intervals.append(tmp_interval)
+                        token_pos += 1
+                        tmp_interval = [tokens_align_intervals[token_pos][0], tokens_align_intervals[token_pos][1], tokens_align_intervals[token_pos][2]]
+
+                    if "D.S" in words[i].upper() and tmp_interval[2].upper() == "D.S":
+                        tmp_interval[2] = '{}.{}'.format(tree_pos + 1, i + 1)
+                        index_intervals.append(tmp_interval)
+                        token_pos += 1
+                    i += 1
+                
+                else:
+                    c = words[i].split()
+                    for x in c:
+                        # print(x, tokens_align_intervals[token_pos][2])
+                        tmp_value = tokens_align_intervals[token_pos][2]
+                        if x == tmp_value:
+                            tmp_interval = [tokens_align_intervals[token_pos][0], 
+                            tokens_align_intervals[token_pos][1], 
+                            '{}.{}'.format(tree_pos + 1, i + 1)]
+                            # print(tmp_interval, x, tokens_align_intervals[token_pos][2])
+                            index_intervals.append(tmp_interval)
+                        token_pos += 1
+                    i += 1
+
 
             elif words[i].strip('~').upper() == tmp_interval[2].upper():
                 if words[i] != '#':

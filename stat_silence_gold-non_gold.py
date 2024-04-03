@@ -199,7 +199,7 @@ def count_misplaced_hashes(tsv_file_path):
 
 def count_hashes_in_file(filepath):
     # if filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-15mars.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences-15mars.tsv":
-    if filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-15mars.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences.tsv":
+    if filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-02avril.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-15mars.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/results_tsv.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences.tsv" and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences-15mars.tsv":
         with open(filepath, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file, delimiter='\t')
             gold_hashes = non_gold_hashes = same_position_hashes = misplaced_hashes = 0
@@ -276,7 +276,7 @@ def find_files_with_largest_hash_difference(results):
     differences = []
     for file_name, data in results.items():
         # if file_name != "all_sentences-15mars.tsv" and file_name != "all_sentences.tsv" and file_name != "results_tsv-15mars.tsv":
-        if file_name != "all_sentences-15mars.tsv" and file_name != "all_sentences.tsv" and file_name != "results_tsv.tsv":
+        if file_name != "all_sentences-15mars.tsv" and file_name != "all_sentences.tsv" and file_name != "results_tsv.tsv" and file_name != "results_tsv-15mars.tsv":
             difference = abs(data['gold_hashes'] - data['non_gold_hashes'])
             differences.append((file_name, difference))
     
@@ -337,9 +337,9 @@ def main():
     # folder_path = "MERGED/gold_non_gold"
     # tsv_file_path = "TSV/combined-tokensalign_silences_TALN.tsv"
     # tsv_all_sentences = "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences.tsv"
-    folder_path = "MERGED/gold_non_gold_15mars"
-    tsv_file_path = "TSV/combined-tokensalign_silences_TALN-15mars.tsv"
-    tsv_all_sentences = "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences-15mars.tsv"
+    folder_path = "MERGED/gold_non_gold_01avril"
+    tsv_file_path = "TSV/combined-tokensalign_silences_TALN-02avril.tsv"
+    tsv_all_sentences = "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences-02avril.tsv"
     sentences_folder = "TSV/TSV_sentences_gold_non_gold_TALN/"
 
     # Écrire les statistiques dans un fichier TSV
@@ -358,7 +358,7 @@ def main():
 
     results = process_all_tsv_files(sentences_folder)
     # process_all_tsv_files(sentences_folder, 'TSV/TSV_sentences_gold_non_gold_TALN/results_tsv.tsv')
-    process_all_tsv_files(sentences_folder, 'TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-15mars.tsv')
+    process_all_tsv_files(sentences_folder, 'TSV/TSV_sentences_gold_non_gold_TALN/results_tsv-01avril.tsv')
     # print(results)
     
     matching_files = filter_files_by_hash_conditions(results)

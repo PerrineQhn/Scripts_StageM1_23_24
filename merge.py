@@ -81,7 +81,7 @@ def generate_tiers_selection_non_gold_silence(directory):
     for file in sorted(os.listdir(directory)):
         if file.endswith('.TextGrid'):
             # Tiers for syllable alignment
-            if 'M-syl_tok-15mars.TextGrid' in file:
+            if 'M-syl_tok.TextGrid' in file:
                 other_tiers[file] = ['Combined']
                 # print(file)
             # Tiers for index alignment
@@ -152,7 +152,7 @@ def generate_tiers_selection_gold_non_gold_silence(directory, directory_gold):
     for file in sorted(os.listdir(directory)):
         if file.endswith('.TextGrid'):
             # Tiers for syllable alignment
-            if 'MG-syl_tok-15mars.TextGrid' in file:
+            if 'MG-syl_tok.TextGrid' in file:
                 tiers_combined[file] = ['Combined', 'SyllSil']
                 # print(file)
     
@@ -194,7 +194,7 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
             for tier in tiers_list:
                 # print(tier)
                 if tier_name not in added_tiers:  # Check if the tier has already been added
-                    # print(f"Adding tier '{tier_name}' from file: {directory_used}, {file}")
+                    print(f"Adding tier '{tier_name}' from file: {directory_used}, {file}")
                     tg = textgrid.TextGrid.fromFile(os.path.join(directory_used, file))
                     current_tier = tg.getFirst(tier_name)
                     if current_tier is not None:
@@ -218,7 +218,7 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
 
 base_folder = 'TEXTGRID_WAV_gold_non_gold_TALN/'
 base_folder_gold = 'TEXTGRID_WAV/'
-merged = 'MERGED/gold_non_gold_15mars/'
+merged = 'MERGED/gold_non_gold_01avril/'
 
 for subdir in os.listdir(base_folder):
     subdir_path = os.path.join(base_folder, subdir)

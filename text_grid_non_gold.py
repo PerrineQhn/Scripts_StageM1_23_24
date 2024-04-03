@@ -114,15 +114,18 @@ def preprocess_text_list(text_list):
     new_text_list = []
     contractions = {
         "don't": ["do", "n't"],
-        "it's": ["it", " 's"], 
+        # "it's": ["it", " 's"], 
         "i'm": ["i", " 'm"],
         "what's": ["what", " 's"],
         "can't": ["ca", "n't"],
         "cannot": ["can", "not"],
         "we're": ["we", " 're"],
-        "dat's": ["dat", " 's"],
+        # "dat's": ["dat", " 's"],
         "didn't": ["did", "n't"],
+        "devil's": ["devil", " 's"],
+        "you'll": ["you", " 'll"],
     }
+
     for word in text_list:
         if word.lower() in contractions:  # Added lower() for case insensitivity
             new_text_list.extend(contractions[word.lower()])
@@ -186,21 +189,24 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                     current_text = " ".join(sentence_without_punc)
                     print('\n ###############################################')
                     print('current_text (no punc):', current_text)
+
                     start = i_text
                     
-                    while i_text < len(text_list):
-                        print(i_text - start + 1, len(sentence))
+                    while i_text < len(text_list):  
+                        # print(i_text - start + 1, len(sentence))
                         # print(current_text)
                         print("text_list[i_text]:", text_list[i_text], " | sentence[-1]:", sentence[-1], " | i_text - start +1:", i_text - start +1, " | len(sentence):", len(sentence), 'start:', start, 'i_text:',i_text, 'text_list[i_text]:', text_list[i_text] )
+                        # print("test:", text_list[i_text], sentence[0], sentence[-1], i_text, start, i_text - start + 1, len(sentence))
                         if len(sentence) == 1:
                             align_begin = misc_list[i_text].get(i_text + 1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
                             align_end = misc_list[i_text].get(i_text + 1).get("AlignEnd")
                             current_xmax = int(align_end) / 1000
-                            # print(current_xmin, current_xmax, current_text)
+                            print(current_xmin, current_xmax, current_text)
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
                             i_text += 1
+                            # print(' 1 : current_xmin:', current_xmin, 'current_xmax:', current_xmax, 'current_text:', current_text)
                             break
 
                         elif text_list[i_text] == sentence[0] and start == i_text:
@@ -212,9 +218,10 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                             align_begin = misc_list[temp_i_text].get(temp_i_text+1).get("AlignBegin")
                             current_xmin = int(align_begin) / 1000
                             print(text_list[i_text], sentence[0], sentence[-1])
+                            # print(' 2 : current_xmin:', current_xmin, 'current_xmax:', current_xmax, 'current_text:', current_text)
 
                         elif text_list[i_text] == sentence[-1] and i_text - start + 1 == len(sentence):
-                            # print(sentence)
+                            print(sentence)
                             # print(text_list[i_text], sentence[-1])
                             # print(i_text - start + 1, len(sentence))
                             temp_i_text = i_text
@@ -227,9 +234,11 @@ def create_textgrid_taln(file_path, output_textgrid_path):
                             if current_xmin != current_xmax:
                                 intervals.append(tgio.Interval(current_xmin, current_xmax, current_text))
                             i_text += 1
+                            # print(' 3 : current_xmin:', current_xmin, 'current_xmax:', current_xmax, 'current_text:', current_text)
                             break
                         i_text += 1
 
+                    print('current_xmin:', current_xmin, 'current_xmax:', current_xmax, 'current_text:', current_text)
     tier = tgio.IntervalTier("trans", intervals)
     textgrid.addTier(tier)
     textgrid.save(output_textgrid_path)
@@ -261,8 +270,8 @@ for fichier in os.listdir(dossier_conllu):
         # if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
         # create_textgrid(chemin_conllu, chemin_textgrid)
         # print(chemin_textgrid)
-        # if nom_fichier_sans_extension == 'ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG':
-        create_textgrid_taln(chemin_conllu, chemin_textgrid)  
+        if nom_fichier_sans_extension == 'ENU_37_Dmoris-Restaurant_MG':
+            create_textgrid_taln(chemin_conllu, chemin_textgrid)  
 
 # create_textgrid_taln('./SUD_Naija-NSC-master-gold-non-gold-TALN/WAZP_04_Ponzi-Scheme_MG.conllu', './TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.TextGrid')
 print("Done !")

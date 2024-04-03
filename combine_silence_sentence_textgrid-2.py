@@ -2,6 +2,8 @@ from praatio import tgio
 import textgrid
 from tqdm import tqdm
 import os
+import time
+eps = 0.25
 
 def fill_gaps_with_silence(tier, max_timestamp):
     new_intervals = []
@@ -24,30 +26,15 @@ def fill_gaps_with_silence(tier, max_timestamp):
 
 
 def pitchtier_verify_silence(pitch_file, start, end):
-    # # Calculer la durée de l'intervalle
-    # interval_duration = end - start
+    # Calculer la durée de l'intervalle
+    interval_duration = end - start
 
-    # # Vérifier si la durée est supérieure à 0.15 seconde
-    # if interval_duration <= 0.15:
-    #     # Considérer comme non silencieux directement
-    #     return False
-    
-    point_count = 0  # Compteur pour les points de pitch
-
-    # Open the pitch file
-    with open(pitch_file, 'r') as file:
-        lignes = file.readlines()
-        for ligne in lignes:
-            if "number =" in ligne:
-                nombre = float(ligne.split('=')[1])
-                if start <= nombre <= end:
-                    point_count += 1
-
-    # Debugging: Afficher les informations
-    # print(f"Interval: {start} - {end}, Points found: {point_count}")
-
-    # S'il y a moins de 2 points, considérer comme un silence
-    return point_count < 2
+    # Vérifier si la durée est supérieure à 0.15 seconde
+    if interval_duration <= 0.15:
+        # Considérer comme non silencieux directement
+        return False
+    else:
+        return True
 
 
 def align_silence(ipus_path, tokens_path):
@@ -136,116 +123,170 @@ def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None
     return phrases_with_hash
 
 
-def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
-    # print(ipus_path, tokens_path, pitch_path, syllabes_path, output_path)
-    # Ouvrir les fichiers TextGrid
+def create_tier(ipus_path, tokens_path, tier:str):
     textgrid_ipus = tgio.openTextgrid(ipus_path)
     textgrid_tokens = tgio.openTextgrid(tokens_path)
-    textgrid_syl = tgio.openTextgrid(syllabes_path)
-
-    # Créer un nouvel objet TextGrid pour les intervalles combinés
     combined_textgrid = tgio.Textgrid()
-
     combine_intervals = []
-    syll_intervals = []
-
-    # Obtenir les intervalles des tiers 'IPUs', 'TokensAlign' et 'SyllAlign'
     ipus_tier = textgrid_ipus.tierDict['IPUs']
-    tokens_tier = textgrid_tokens.tierDict['TokensAlign']
-    syllabes_tier = textgrid_syl.tierDict['SyllAlign']
-
+    tokens_tier = textgrid_tokens.tierDict[tier]
     ipus_intervals = ipus_tier.entryList
     tokens_intervals = tokens_tier.entryList
-    syllabes_intervals = syllabes_tier.entryList
 
-    last_ipus_interval = ipus_tier.entryList[-1] if ipus_tier.entryList else None
-    is_last_ipus_silence = (last_ipus_interval[2] == '#') if last_ipus_interval else False
+    pos_ipu = 0
+    size_ipu = len(ipus_intervals)
+    pos_token = 0
+    size_token = len(tokens_intervals)
+    print("tokens_intervals: ", tokens_intervals)
+    last_combine_end = 0
+    is_inserted_diese = False
+    is_after_space = False
+    while pos_ipu < size_ipu and pos_token < size_token:
+        # get ipu interval
+        ipu_start, ipu_end, ipu_label = ipus_intervals[pos_ipu]
+        # Process each token interval
+        token_start, token_end, token_label = tokens_intervals[pos_token]
+        if pos_token > 0 and tokens_intervals[pos_token - 1] != token_start:
+            is_after_space = True
+        if ipu_label == '#':
+            print('#', ipu_start, ipu_end, token_start, token_end, last_combine_end)
+            if pos_ipu == 0 and ipu_start > token_end:
+                combine_intervals.append([token_start, token_end, token_label])
+                last_combine_end = token_end
+                pos_token += 1
+                continue
+            if ipu_start <= token_start <= token_end <= ipu_end:
+                last_combine_end = ipu_start
+                pos_token += 1
+                is_inserted_diese = False
+                print('A1')
 
-    # Process each token interval
-    for token in tokens_intervals:
-        token_start, token_end, token_label = token
-        updated_start, updated_end = token_start, token_end
-        # print(f"Token: {token_label}, Start: {token_start}, End: {token_end}")
+            elif token_start < ipu_start and token_end < ipu_end :
+                if is_after_space and last_combine_end < token_start:
+                    token_start = last_combine_end
+                    is_after_space = False
+                combine_intervals.append([token_start, ipu_start, token_label])
+                last_combine_end = ipu_start
+                pos_token += 1
+                is_inserted_diese = False
+                print('A2')
 
-
-        # Initialize the updated start and end times for the token
-        silence_in_token = False
-
-        # Check for silences within the token interval
-        for ipu in ipus_intervals:
-            ipu_start, ipu_end, ipu_label = ipu
-            # print(f"IPU: {ipu_label}, Start: {ipu_start}, End: {ipu_end}")
-
-            if ipu_label == '#' and token_start < ipu_end and token_end > ipu_start:
-                # Skip silence adjustment if this is the last ipus interval
-                if (ipu_start, ipu_end) == (last_ipus_interval[0], last_ipus_interval[1]) and is_last_ipus_silence:
-                    continue
-
-                # Utiliser la fonction mise à jour pour vérifier le silence
-                is_silence = pitchtier_verify_silence(pitch_path, ipu_start, ipu_end)
-                # print(f"Silence detected: {is_silence} between {ipu_start} and {ipu_end}")
-
-                if is_silence:  # Si c'est un silence
-                    silence_in_token = True
-                    # Ajuster les bornes du token pour exclure le silence
-                    if (ipu_start - token_start) > (token_end - ipu_end):
-                        updated_end = min(ipu_start, updated_end)
+            elif ipu_start <= token_start <= ipu_end <= token_end or pos_token == 0:
+                if token_label == '#':
+                    # At the beginning of the text
+                    combine_intervals.append([min(ipu_start, token_start), ipu_end, '#'])
+                    last_combine_end = ipu_end
+                else:
+                    if is_inserted_diese is False:
+                        combine_intervals.append([last_combine_end, ipu_end, '#'])
+                        is_inserted_diese = True
+                    combine_intervals.append([ipu_end, token_end, token_label])
+                    last_combine_end = token_end
+                is_inserted_diese = False
+                pos_ipu += 1
+                pos_token += 1
+                print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
+                print('A3')
+            elif token_start <= ipu_start <= ipu_end <= token_end:
+                left = (ipu_start - token_start) - (token_end - ipu_end)
+                if left >= 0:
+                    if is_after_space and last_combine_end < token_start:
+                        token_start = last_combine_end
+                        is_after_space = False
+                    combine_intervals.append([token_start, ipu_start, token_label])
+                    combine_intervals.append([ipu_start, ipu_end, "#"])
+                    last_combine_end = ipu_end
+                else:
+                    combine_intervals[-1][1] = ipu_start
+                    if combine_intervals[-1][2] == '#' and combine_intervals[-1][1] <= ipu_end:
+                        combine_intervals[-1][1] = ipu_end
                     else:
-                        updated_start = max(ipu_end, updated_start)
+                        combine_intervals.append([ipu_start, ipu_end, "#"])
+                    combine_intervals.append([ipu_end, token_end, token_label])
+                    last_combine_end = token_end
+                pos_ipu += 1
+                pos_token += 1
+                is_inserted_diese = True
+                print('A4.5')
+            # Because of a space
+            elif ipu_end <= token_start:
+                print("????", combine_intervals[-1][0], combine_intervals[-1][1], ipu_start, ipu_end, ipu_start, ipu_end, '#')
+                if is_after_space and combine_intervals[-1][1] != ipu_start:
+                    combine_intervals[-1][1] = ipu_start
+                if combine_intervals[-1][2] == '#' and combine_intervals[-1][1] <= ipu_end:
+                    combine_intervals[-1][1] = ipu_end
+                else:
+                    combine_intervals.append([ipu_start, ipu_end, '#'])
+                last_combine_end = ipu_end
+                pos_ipu += 1
+                is_inserted_diese = True
+                print('A5')
+            else:
+                time.sleep(1000)
+                print('impossible?')
+            if pos_ipu == size_ipu -1:
+                combine_intervals.append([ipu_start, ipu_end, '#'])
+        else:
+            #insert diese if "" is inluded in ipu and > 0.25
+            if is_after_space:
+                if ipu_start <= tokens_intervals[pos_token - 1][1] < token_start < ipu_end:
+                    if token_start - tokens_intervals[pos_token - 1][1] > eps:
+                        if combine_intervals[-1][2] == '#' and combine_intervals[-1][1] <= token_start:
+                            combine_intervals[-1][1] = token_start
+                        else:
+                            combine_intervals.append([tokens_intervals[pos_token - 1][1], token_start, '#'])
+                        last_combine_end = token_start
+                        print('A #')
+            if ipu_start <= token_start and token_end < ipu_end:
+                pos_token += 1
+                combine_intervals.append([last_combine_end, token_end, token_label])
+                last_combine_end = token_end
+                print(ipu_start, ipu_end, token_start, token_end, token_label)
+                print('A7')
+                is_inserted_diese = False
 
-        # Append either silence or token based on the check, ensuring correct order
-        if updated_start < updated_end:
-            combine_intervals.append([updated_start, updated_end, token_label])
-        elif updated_start > updated_end:
-            # Log or handle the anomaly here
-            print(f"Anomaly : start={updated_start}, end={updated_end}, label={token_label}")
+            elif ipu_start <= token_start and token_end >= ipu_end:
+                if len(combine_intervals) > 1 and combine_intervals[-1][1] > ipu_end and combine_intervals[-2][2] == '#':
+                    print('len(combine_intervals) > 1 and combine_intervals[-1][1] > ipu_end and combine_intervals[-2][2] == ',combine_intervals[-1][1], ipu_end, combine_intervals[-2][2] == '#')
+                    combine_intervals[-1][1] = ipu_end
+                    last_combine_end = ipu_end
+                pos_ipu += 1
+                is_inserted_diese = False
+                print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
+                print('A9')
 
-    # Processus pour chaque intervalle de syllabe
-    for syllabe in syllabes_intervals:
-        syll_start, syll_end, syll_label = syllabe
-
-        # Initialiser les temps de début et de fin mis à jour pour la syllabe
-        updated_start = syll_start
-        updated_end = syll_end
-        silence_in_syllabe = False
-
-        # Vérifier les silences à l'intérieur de l'intervalle de la syllabe
-        for ipu in ipus_intervals:
-            ipu_start, ipu_end, ipu_label = ipu
-            if ipu_label == '#' and syll_start < ipu_end and syll_end > ipu_start:
-                # Skip silence adjustment if this is the last ipus interval
-                if (ipu_start, ipu_end) == (last_ipus_interval[0], last_ipus_interval[1]) and is_last_ipus_silence:
-                    continue
-                is_silence = pitchtier_verify_silence(pitch_path, ipu_start, ipu_end)
-                if is_silence:
-                    silence_in_syllabe = True
-                    if (ipu_start - syll_start) > (syll_end - ipu_end):
-                        updated_end = min(ipu_start, updated_end)
-                    else:
-                        updated_start = max(ipu_end, updated_start)
-
-        # Ajouter soit un silence soit une syllabe basée sur la vérification
-        if updated_start < updated_end:
-            syll_intervals.append([updated_start, updated_end, syll_label])
-        elif updated_start > updated_end:
-            print(f"Anomalie : start={updated_start}, end={updated_end}, label={syll_label}")
+            elif ipu_end < token_start:
+                print('normal?')
+                print(ipu_start, ipu_end, token_start, token_end)
+                pos_ipu += 1
+                is_inserted_diese = True
+                print('A10')
+            else:
+                print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
+                time.sleep(111)
+                print("impossible cases ?")
 
     # Créer le tier combiné et l'ajouter au TextGrid
-    combined_tier = tgio.IntervalTier("Combined", combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
-    syll_sil = tgio.IntervalTier("SyllSil", syll_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+    if tier == 'TokensAlign':
+        combined_tier = tgio.IntervalTier("Combined", combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+    if tier == 'SyllAlign':
+        combined_tier = tgio.IntervalTier("SyllSil", combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
 
-    combined_textgrid.addTier(combined_tier)
-    combined_textgrid.addTier(syll_sil)
+    return combined_tier
 
-    fill_gaps_with_silence(combined_tier, combined_textgrid.maxTimestamp)
-    fill_gaps_with_silence(syll_sil, combined_textgrid.maxTimestamp)
+def save_textgrid(token_syl_tier, syllsil_tier, output_path):
+    # Create a new TextGrid object
+    new_textgrid = tgio.Textgrid()
 
-    # Sauvegarder le nouveau TextGrid
-    combined_textgrid.save(output_path)
+    # Add the tiers to the new TextGrid
+    new_textgrid.addTier(token_syl_tier)
+    new_textgrid.addTier(syllsil_tier)
+
+    new_textgrid.save(output_path)
 
 # base_folder = "./TEXTGRID_WAV_nongold/"
 base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN/"
-tsv_folder = "./TSV/"
+# tsv_folder = "./TSV/"
 # pitchtier_folder = "./Praat/non_gold/"
 pitchtier_folder = "./Praat/"
 all_phrases_with_hash = [] 
@@ -309,7 +350,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
 
                 if id_textgrid_name in id_files and sent_textgrid_path is not None:
                     id_textgrid_path = os.path.join(subdir_path, id_textgrid_name)
-                    # print(id_textgrid_path)
+                    print(id_textgrid_path)
                     syll_textgrid_path = os.path.join(subdir_path, syll_textgrid_name)
 
                     # Construct the output path for syl_tok tier
@@ -319,16 +360,22 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
 
                     # Create the syl_tok tier and align the silences
-                    create_tier(ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
-                    align_silence(ipus_textgrid_path, syl_tok_output_path)
-                    phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
-                    all_phrases_with_hash.extend(phrases_with_hash)
+                    # print(file, ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
+                    # if ipus_textgrid_path == "./TEXTGRID_WAV_gold_non_gold_TALN/LAG_12/LAG_12_Insurance_MG-ipus.TextGrid":
+                    combined_tier = create_tier(ipus_textgrid_path, id_textgrid_path, 'TokensAlign')
+                    syll_tier = create_tier(ipus_textgrid_path, syll_textgrid_path, 'SyllAlign')
+
+                    save_textgrid(combined_tier, syll_tier, syl_tok_output_path)
+
+                    # align_silence(ipus_textgrid_path, syl_tok_output_path)
+                    # phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
+                    # all_phrases_with_hash.extend(phrases_with_hash)
                 else:
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Write the accumulated results to a TSV file
-# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
-with open(output_tsv_path, 'w', encoding='utf-8') as f:
-    for item in all_phrases_with_hash:
-        f.write('\t'.join(item) + '\n')
+# # output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
+# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold.tsv")
+# with open(output_tsv_path, 'w', encoding='utf-8') as f:
+#     for item in all_phrases_with_hash:
+#         f.write('\t'.join(item) + '\n')
