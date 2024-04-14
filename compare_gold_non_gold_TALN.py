@@ -192,7 +192,11 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                         move_step = 1
 
                     if token_label.upper() == 'IT':
-                        token_label = token_label + "'" + tier[i + 1][0]
+                        token_label = token_label + "'" + tier[i+1][0]
+                        move_step = 2
+
+                    if token_label.upper() == 'DEVIL':
+                        token_label = token_label + "'" + tier[i+1][0]
                         move_step = 2
 
                     if token_label.upper() == 'N':
@@ -208,21 +212,26 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                         move_step = 2
 
                     if token_label.upper() == 'MOMO':
-                        token_label = token_label + "'" + tier[i + 1][0]
+                        token_label = token_label + "'" + tier[i+1][0]
                         move_step = 2
 
                     if token_label.upper() == 'WHAT':
-                        token_label = token_label + "'" + tier[i + 1][0]
+                        token_label = token_label + "'" + tier[i+1][0]
                         move_step = 2
 
                     if token_label.upper() == 'DAT':
-                        token_label = token_label + "'" + tier[i + 1][0]
+                        token_label = token_label + "'" + tier[i+1][0]
                         move_step = 2
+
+                    if token_label.upper() == 'YOU':
+                        token_label = token_label + "'" + tier[i+1][0]
+                        move_step = 2
+
                     if token_label.upper() == 'HM':
                         if tier[i + 1][0] == '#':
                             token_label = token_label + "'" + 'm'
                         else:
-                            token_label = token_label + "'" + tier[i + 1][0]
+                            token_label = token_label + "'" + tier[i+1][0]
                         move_step = 2
 
                     if token.upper() == token_label.upper():
@@ -322,6 +331,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                             while current_try < try_time:
                                 while idx_word_try < len(sentences_list) and sentences_list[idx_word_try] in punctuation_list:
                                     idx_word_try +=1
+                                
                                 if idx_word_try < len(sentences_list):
                                     print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
 
@@ -369,7 +379,9 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                         elif flag_diese is True and sentences_list[idx_word].upper() == 'DEY':
                             idx_word += 1
                             continue
-
+                        elif flag_diese is True and sentences_list[idx_word].upper() == 'MY' and sentences_list[idx_sentences_list].upper() == "WORK":
+                            idx_word += 1
+                            continue
                         else:
                             break
                     print('c_tier == c_word:', c_tier, c_word)
@@ -501,43 +513,44 @@ def main():
                 print(f"Traitement de {base_name}")
                 # print(f"Gold: {gold_file}")
                 list_file = [
-                    'SUD_Naija-NSC-master/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_06_Ugo-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_08_David-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_09_Journalism_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_10_Steven-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_12_Accident_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_GWA_14_Mary-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_INF_10_Women-Battering_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_INF_12_Evictions_MG.conllu',
-                    'SUD_Naija-NSC-master/ABJ_NOU_02_Gimba-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/BEN_08_Egusi-And-Banga-Soup_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG.conllu', # you 0 you 582 672 suffer ====================else
+                    'SUD_Naija-NSC-master/ABJ_GWA_06_Ugo-Lifestory_MG.conllu', # line 406 while sentences_list[idx_sentences_list].upper() != tier[i][0].upper():
+                    'SUD_Naija-NSC-master/ABJ_GWA_08_David-Lifestory_MG.conllu', # work 6 work 1308 1493 find ====================else
+                    'SUD_Naija-NSC-master/ABJ_GWA_09_Journalism_MG.conllu', # line 336  print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/ABJ_GWA_10_Steven-Lifestory_MG.conllu', # if 18 if 2081 2322 fit ====================else
+                    'SUD_Naija-NSC-master/ABJ_GWA_12_Accident_MG.conllu', # line 406  while sentences_list[idx_sentences_list].upper() != tier[i][0].upper():
+                    'SUD_Naija-NSC-master/ABJ_GWA_14_Mary-Lifestory_MG.conllu', # work 9 work 229 261 anoder ====================else
+                    # 'SUD_Naija-NSC-master/ABJ_INF_10_Women-Battering_MG.conllu',
+                    # 'SUD_Naija-NSC-master/ABJ_INF_12_Evictions_MG.conllu',
+                    'SUD_Naija-NSC-master/ABJ_NOU_02_Gimba-Lifestory_MG.conllu', # comot 26 comot 194 113 con ====================else
+                    'SUD_Naija-NSC-master/BEN_08_Egusi-And-Banga-Soup_MG.conllu', # e 13 e 1124 1341 dey ====================else
                     'SUD_Naija-NSC-master/BEN_14_BronzeFM-News_MG.conllu',
                     'SUD_Naija-NSC-master/BEN_36_Clever-Girl_MG.conllu',
-                    'SUD_Naija-NSC-master/ENU_01_Salomis-Egusi-Soup-Recipe_MG.conllu',
-                    'SUD_Naija-NSC-master/IBA_03_Womanisers_MG.conllu',
-                    'SUD_Naija-NSC-master/IBA_04_Alaska-Pepe_MG.conllu',
-                    'SUD_Naija-NSC-master/IBA_20_Bose-Alade_MG.conllu',
-                    'SUD_Naija-NSC-master/IBA_32_Tori-By-Samuel_MG.conllu',
-                    'SUD_Naija-NSC-master/JOS_01_People-Of-Plateau_MG.conllu',
-                    'SUD_Naija-NSC-master/KAD_09_Kabir-Gymnasium_MG.conllu',
-                    'SUD_Naija-NSC-master/KAD_13_Entering-University_MG.conllu',
-                    'SUD_Naija-NSC-master/LAG_07_Johns-Biography_MG.conllu',
-                    'SUD_Naija-NSC-master/LAG_11_Adeniyi-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/LAG_37_Soap-Making_MG.conllu',
-                    'SUD_Naija-NSC-master/ONI_07_Dis-Year-Na-My-Year_MG.conllu',
-                    'SUD_Naija-NSC-master/ONI_10_Sport-Commentary_MG.conllu',
-                    'SUD_Naija-NSC-master/ONI_27_A-Hotelier-Interview_MG.conllu',
-                    'SUD_Naija-NSC-master/PRT_02_Food-And-Health_MG.conllu',
-                    'SUD_Naija-NSC-master/WAZA_01_Triplea-Sports_MG.conllu',
-                    'SUD_Naija-NSC-master/WAZA_08_Body-Matter_MG.conllu',
-                    'SUD_Naija-NSC-master/WAZL_08_Edewor-Lifestory_MG.conllu',
-                    'SUD_Naija-NSC-master/WAZL_15_MC-Abi_MG.conllu',
-                    'SUD_Naija-NSC-master/WAZP_03_Education_MG.conllu'
+                    'SUD_Naija-NSC-master/ENU_01_Salomis-Egusi-Soup-Recipe_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/IBA_03_Womanisers_MG.conllu', # I 6 I 746 927 ll ====================else
+                    'SUD_Naija-NSC-master/IBA_04_Alaska-Pepe_MG.conllu', # one 6 one 1966 2331 di ====================else
+                    'SUD_Naija-NSC-master/IBA_20_Bose-Alade_MG.conllu', # too 5 too 603 718 light ====================else
+                    'SUD_Naija-NSC-master/IBA_32_Tori-By-Samuel_MG.conllu', # line 86 if tier[idx_tier_try][0].upper() == '#':
+                    'SUD_Naija-NSC-master/JOS_01_People-Of-Plateau_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/KAD_09_Kabir-Gymnasium_MG.conllu', # line 406  while sentences_list[idx_sentences_list].upper() != tier[i][0].upper():
+                    'SUD_Naija-NSC-master/KAD_13_Entering-University_MG.conllu', # line 336  print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/LAG_07_Johns-Biography_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/LAG_11_Adeniyi-Lifestory_MG.conllu', # fit 8 fit 1057 1258 you ====================else
+                    'SUD_Naija-NSC-master/LAG_37_Soap-Making_MG.conllu', # wey 12 wey 225 2^Couse ====================else
+                    'SUD_Naija-NSC-master/ONI_07_Dis-Year-Na-My-Year_MG.conllu', # line 86 if tier[idx_tier_try][0].upper() == '#':
+                    'SUD_Naija-NSC-master/ONI_10_Sport-Commentary_MG.conllu', #line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/ONI_27_A-Hotelier-Interview_MG.conllu', # line 86 if tier[idx_tier_try][0].upper() == '#':
+                    'SUD_Naija-NSC-master/PRT_02_Food-And-Health_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare'
+                    'SUD_Naija-NSC-master/WAZA_01_Triplea-Sports_MG.conllu', # print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/WAZA_05_Big-Mo_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/WAZA_08_Body-Matter_MG.conllu', # while sentences_list[idx_sentences_list].upper() != tier[i][0].upper():
+                    'SUD_Naija-NSC-master/WAZL_08_Edewor-Lifestory_MG.conllu', # talk 34 talk 1402 1588 just ====================else
+                    'SUD_Naija-NSC-master/WAZL_15_MC-Abi_MG.conllu', # line 336 print(sentences_list[idx_word_try],idx_word_try, tier[idx_tier_try][0].upper(),idx_tier_try, ' - flag_diese = COompare')
+                    'SUD_Naija-NSC-master/WAZP_03_Education_MG.conllu' # can't 1 can't 1259 1428 ca  " in token and " not in token_label
                             ]
                 
                 if gold_file not in list_file:
-                    if "WAZP_07" in gold_file: 
+                    if "KAD_17" in gold_file: 
                         gold_sentences = extract_sentences(gold_file)
                         new_gold_sentences = [' '.join(sentence) for sentence in gold_sentences]
 
