@@ -6,18 +6,6 @@ import time
 eps = 0.25
 
 
-
-def pitchtier_verify_silence(pitch_file, start, end):
-    # Calculer la durée de l'intervalle
-    interval_duration = end - start
-
-    # Vérifier si la durée est supérieure à 0.15 seconde
-    if interval_duration <= 0.15:
-        # Considérer comme non silencieux directement
-        return False
-    else:
-        return True
-
 def align_silence(ipus_path, tokens_path):
     # Open the TextGrid files
     textgrid_ipus = tgio.openTextgrid(ipus_path)
@@ -129,15 +117,16 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
         # Process each token interval
         token_start, token_end, token_label = tokens_intervals[pos_token]
 
-        # if ipu_end - ipu_start < 0.15:
-        #     pos_ipu += 1
-        #     continue
-
         if pos_token > 0 and tokens_intervals[pos_token - 1] != token_start:
             is_after_space = True
 
         if ipu_label == '#':
             print('#', ipu_start, ipu_end, token_start, token_end, last_combine_end)
+
+            if ipu_end - ipu_start < 0.15:
+                pos_ipu += 1
+                continue
+
             if pos_ipu == 0 and ipu_start > token_end:
                 combine_intervals.append([token_start, token_end, token_label])
                 last_combine_end = token_end
