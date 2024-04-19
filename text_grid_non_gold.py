@@ -114,7 +114,7 @@ def preprocess_text_list(text_list):
     new_text_list = []
     contractions = {
         "don't": ["do", "n't"],
-        # "it's": ["it", " 's"], 
+        "it's": ["it", " 's"], 
         "i'm": ["i", " 'm"],
         "what's": ["what", " 's"],
         "can't": ["ca", "n't"],
@@ -270,7 +270,7 @@ for fichier in os.listdir(dossier_conllu):
         # if nom_fichier_sans_extension != 'LAG_05_Government-Dey-Try_M':
         # create_textgrid(chemin_conllu, chemin_textgrid)
         # print(chemin_textgrid)
-        if nom_fichier_sans_extension == 'ENU_37_Dmoris-Restaurant_MG':
+        if nom_fichier_sans_extension == 'BEN_08_Egusi-And-Banga-Soup_MG':
             create_textgrid_taln(chemin_conllu, chemin_textgrid)  
 
 # create_textgrid_taln('./SUD_Naija-NSC-master-gold-non-gold-TALN/WAZP_04_Ponzi-Scheme_MG.conllu', './TEXTGRID_WAV_gold_non_gold_TALN/WAZP_04/WAZP_04_Ponzi-Scheme_MG.TextGrid')

@@ -31,8 +31,8 @@ def get_silence_duration(textgrid, pitch_path):
             valeur_durée = str(f"{xmin} - {xmax}")
             count = pitchtier_count_silence_points(pitch_path, xmin, xmax)
 
-            if count != 0:
-                pitchtier_silence[filename][valeur_durée] = count
+            # if count != 0:
+            pitchtier_silence[filename][valeur_durée] = count
 
     return pitchtier_silence
 
@@ -50,7 +50,7 @@ def write_tsv(file_path, data):
 
 
 def main():
-    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN/"
+    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_9pt_15ms/"
     tsv_folder = "./TSV/"
 
     all_pitchtier_silence = defaultdict(dict)
@@ -76,7 +76,7 @@ def main():
 
                 all_pitchtier_silence.update(pitchtier_silence)
 
-    write_tsv(tsv_folder + "silence_duration_pitchtier_points_ipu.tsv", all_pitchtier_silence)
+    write_tsv(tsv_folder + "silence_duration_pitchtier_points_ipu_9pt_15ms.tsv", all_pitchtier_silence)
 
 if __name__ == "__main__":
     main()

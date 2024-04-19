@@ -92,30 +92,44 @@ def detect_silence_in_sentence(id_path, sent_path, syl_tok_path, output_tsv=None
     return phrases_with_hash
 
 
-def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
-    print("\n traitement de : ", ipus_path)
+def create_tier(ipus_path, tokens_path, tier:str):
     textgrid_ipus = tgio.openTextgrid(ipus_path)
     textgrid_tokens = tgio.openTextgrid(tokens_path)
     combined_textgrid = tgio.Textgrid()
     combine_intervals = []
     ipus_tier = textgrid_ipus.tierDict['IPUs']
-    tokens_tier = textgrid_tokens.tierDict['TokensAlign']
+    tokens_tier = textgrid_tokens.tierDict[tier]
     ipus_intervals = ipus_tier.entryList
     tokens_intervals = tokens_tier.entryList
 
+    # print("tokens_intervals: ", tokens_intervals)
+
     pos_ipu = 0
-    size_ipu = len(ipus_intervals)
     pos_token = 0
-    size_token = len(tokens_intervals)
-    print("tokens_intervals: ", tokens_intervals)
-    last_combine_end = 0
+    last_combine_end = 0.0
     is_inserted_diese = False
     is_after_space = False
+    ipu_start_tmp = 0
+    is_diese_inf = False
+
+    if ipus_intervals[0][0] != 0.0:
+        ipus_intervals.insert(0, [0.0, ipus_intervals[0][0], '#'])
+
+    size_ipu = len(ipus_intervals)
+    size_token = len(tokens_intervals)
+
     while pos_ipu < size_ipu and pos_token < size_token:
         # get ipu interval
         ipu_start, ipu_end, ipu_label = ipus_intervals[pos_ipu]
         # Process each token interval
         token_start, token_end, token_label = tokens_intervals[pos_token]
+
+        print('**', ipu_start, ipu_end, ipu_label, token_start, token_end, token_label, last_combine_end)
+        if is_diese_inf:
+            ipu_start = ipu_start_tmp
+            is_diese_inf = False
+
+        print('*#*', ipu_start, ipu_end, ipu_label, token_start, token_end, token_label, last_combine_end)
 
         if pos_token > 0 and tokens_intervals[pos_token - 1] != token_start:
             is_after_space = True
@@ -123,12 +137,15 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
         if ipu_label == '#':
             print('#', ipu_start, ipu_end, token_start, token_end, last_combine_end)
 
-            if ipu_end - ipu_start < 0.15:
-                pos_ipu += 1
-                continue
+            # if (ipu_end - ipu_start) < 0.15:
+            #     is_diese_inf = True
+            #     ipu_start_tmp = ipu_start
+            #     pos_ipu += 1
+            #     continue
 
             if pos_ipu == 0 and ipu_start > token_end:
                 combine_intervals.append([token_start, token_end, token_label])
+                print('pos_ipu == 0 and ipu_start > token_end', combine_intervals[-1])
                 last_combine_end = token_end
                 pos_token += 1
                 continue
@@ -158,13 +175,16 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
                     if is_inserted_diese is False:
                         combine_intervals.append([last_combine_end, ipu_end, '#'])
                         is_inserted_diese = True
+                    # print("combine_intervals[-1][1] : ", combine_intervals[-1][1], ipu_end)
                     combine_intervals.append([ipu_end, token_end, token_label])
+                    # print("combine_intervals[-1] : ", combine_intervals[-1], token_end)
                     last_combine_end = token_end
                 is_inserted_diese = False
                 pos_ipu += 1
                 pos_token += 1
                 print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
                 print('A3')
+
             elif token_start <= ipu_start <= ipu_end <= token_end:
                 left = (ipu_start - token_start) - (token_end - ipu_end)
                 if left >= 0:
@@ -186,6 +206,7 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
                 pos_token += 1
                 is_inserted_diese = True
                 print('A4.5')
+
             # Because of a space
             elif ipu_end <= token_start:
                 print("????", combine_intervals[-1][0], combine_intervals[-1][1], ipu_start, ipu_end, ipu_start, ipu_end, '#')
@@ -202,8 +223,12 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
             else:
                 time.sleep(1000)
                 print('impossible?')
-            if pos_ipu == size_ipu -1:
-                combine_intervals.append([ipu_start, ipu_end, '#'])
+            
+            if pos_ipu == size_ipu -1 :
+                print("pos_ipu == size_ipu", last_combine_end, combine_intervals[-1], token_end, ipu_end)
+                if last_combine_end < ipu_end:
+                    combine_intervals.append([last_combine_end, ipu_end, ipu_label])
+
         else:
             #insert diese if "" is inluded in ipu and > 0.25
             if is_after_space:
@@ -213,14 +238,38 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
                             combine_intervals[-1][1] = token_start
                         else:
                             combine_intervals.append([tokens_intervals[pos_token - 1][1], token_start, '#'])
+                            print("combine_intervals[-1] A# : ", combine_intervals[-1])
                         last_combine_end = token_start
                         print('A #')
-            if ipu_start <= token_start and token_end < ipu_end:
+
+            if pos_token == 0 and token_label == '#' and ipu_start > token_start and token_end < ipu_end:
+                print("# en pos_token 0 :", ipu_start, ipu_end, token_start, token_end)
+                combine_intervals.append([token_start, token_end, token_label])
                 pos_token += 1
+                last_combine_end = token_end
+                is_inserted_diese = False
+
+            if ipu_start <= token_start and token_end < ipu_end:
                 combine_intervals.append([last_combine_end, token_end, token_label])
                 last_combine_end = token_end
+                pos_token += 1
                 print(ipu_start, ipu_end, token_start, token_end, token_label)
+                print(combine_intervals[-1])
                 print('A7')
+                is_inserted_diese = False
+
+            elif token_start <= ipu_start and token_end < ipu_end:
+                if token_label != '#':
+                    print("*@*", ipu_start, ipu_end, ipu_label, token_start, token_end, token_label, ", combine interval -1: ", combine_intervals[-1])
+                    combine_intervals.append([combine_intervals[-1][1], token_end, token_label])
+                    print("combine interval -1 *@*: ", combine_intervals[-1])
+                    pos_token += 1
+                    is_inserted_diese = False
+
+            elif token_start < ipu_start and token_end > ipu_end:
+                print("@@@ : ", ipu_start, ipu_end, ipu_label, token_start, token_end, token_label, "combine interval -1: ", combine_intervals[-1])
+                combine_intervals.append([combine_intervals[-1][1], ipu_end, token_label])
+                pos_token += 1
                 is_inserted_diese = False
 
             elif ipu_start <= token_start and token_end >= ipu_end:
@@ -228,9 +277,13 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
                     print('len(combine_intervals) > 1 and combine_intervals[-1][1] > ipu_end and combine_intervals[-2][2] == ',combine_intervals[-1][1], ipu_end, combine_intervals[-2][2] == '#')
                     combine_intervals[-1][1] = ipu_end
                     last_combine_end = ipu_end
+                elif pos_token == size_token-1:
+                    if ipu_end == token_end:
+                        combine_intervals.append([token_start, token_end, token_label])
+                        print("Last Token", combine_intervals[-1])
                 pos_ipu += 1
                 is_inserted_diese = False
-                print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
+                print(" ipu_s < t_s et t_e > ipu_e",ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
                 print('A9')
 
             elif ipu_end < token_start:
@@ -239,51 +292,106 @@ def create_tier(ipus_path, tokens_path, pitch_path, syllabes_path, output_path):
                 pos_ipu += 1
                 is_inserted_diese = True
                 print('A10')
+
             else:
                 print(ipu_start, ipu_end, ipu_label, token_start, token_end, token_label)
-                time.sleep(111)
                 print("impossible cases ?")
+                time.sleep(111)
+                
 
     # Combine '' in IPUS
+    if combine_intervals[0][0] != 0.0:
+        combine_intervals.insert(0, [0.0, combine_intervals[0][0], '#'])
+
+    print("combine_intervals Origin : ", combine_intervals)
     for i in range(1, len(combine_intervals)):
         if combine_intervals[i-1][1] < combine_intervals[i][0]:
             combine_intervals.insert(i, [combine_intervals[i-1][1], combine_intervals[i][0], '*'])
 
+    # print("combine_intervals : ", combine_intervals)
     new_combine_intervals = []
     for idx in range(1, len(combine_intervals)):
+        print(combine_intervals[idx-1], combine_intervals[idx])
+
         if combine_intervals[idx][2] == '#':
             if combine_intervals[idx-1][2] == '*' and combine_intervals[idx-2][2] == '#':
-                # new_combine_intervals[-1][1] = combine_intervals[idx][1]
                 new_combine_intervals[-1][0] = min(combine_intervals[idx-2][0], combine_intervals[idx][0])
                 new_combine_intervals[-1][1] = max(combine_intervals[idx-2][1], combine_intervals[idx][1])
                 print('XYU: ', combine_intervals[idx][0], combine_intervals[idx-1][0], combine_intervals[idx][1], combine_intervals[idx-1][1], combine_intervals[idx][2], combine_intervals[idx-1][2], new_combine_intervals[-1])
+            
             elif combine_intervals[idx-1][2] == '*' and combine_intervals[idx-2][2] != '#':
                 print("\nXXY", combine_intervals[idx][0], combine_intervals[idx-1][0], combine_intervals[idx][1], combine_intervals[idx-1][1], combine_intervals[idx][2], combine_intervals[idx-1][2], new_combine_intervals[-1], "\n")
                 combine_intervals[idx][0] = combine_intervals[idx-1][0]
                 new_combine_intervals.append(combine_intervals[idx])
+            
             elif combine_intervals[idx-1][2] == '#' and combine_intervals[idx][2] == '#':
                 print("\nYY", combine_intervals[idx][0], combine_intervals[idx-1][0], combine_intervals[idx][1], combine_intervals[idx-1][1], combine_intervals[idx][2], combine_intervals[idx-1][2], new_combine_intervals[-1])
                 new_combine_intervals[-1][0] = min(combine_intervals[idx][0], combine_intervals[idx-1][0], new_combine_intervals[-1][0])
                 new_combine_intervals[-1][1] = max(combine_intervals[idx][1], combine_intervals[idx-1][1], new_combine_intervals[-1][1])
-            else:
+
+
+            elif combine_intervals[idx][0] < combine_intervals[idx-1][1] and combine_intervals[idx-1][2] != '#':
+                print("\nXX", combine_intervals[idx][0], combine_intervals[idx-1][0], combine_intervals[idx][1], combine_intervals[idx-1][1], combine_intervals[idx][2], combine_intervals[idx-1][2], new_combine_intervals[-1])
+                combine_intervals[idx][0] = new_combine_intervals[-1][1]
                 new_combine_intervals.append(combine_intervals[idx])
+
+            
+            else:
+                print("add interval #", combine_intervals[idx], "\n")
+                new_combine_intervals.append(combine_intervals[idx])
+
         elif combine_intervals[idx][2] == '*':
             continue
-        else:
+            
+        elif combine_intervals[idx][0] == combine_intervals[idx][1]:
+            combine_intervals[idx][0] = combine_intervals[idx][0] - 0.0001
             new_combine_intervals.append(combine_intervals[idx])
+
+        else:
+            if combine_intervals[idx][0] == combine_intervals[idx-1][0]:
+                print("\nZZ", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
+                combine_intervals[idx][0] = new_combine_intervals[-1][1]
+                new_combine_intervals.append(combine_intervals[idx])
+
+            elif combine_intervals[idx][0] < combine_intervals[idx-1][1]:
+                if combine_intervals[idx][0] == 0.0:
+                    print("\nZZT", combine_intervals[idx], combine_intervals[idx-1])
+                    combine_intervals[idx][0] = combine_intervals[idx-1][1]
+                    new_combine_intervals.append(combine_intervals[idx])
+                else:
+                    print("\nZZZ", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
+                    combine_intervals[idx][0] = new_combine_intervals[-1][1]
+                    new_combine_intervals.append(combine_intervals[idx])
+            
+            else:
+                print("add interval", combine_intervals[idx], "\n")
+                new_combine_intervals.append(combine_intervals[idx])
     print("\nnew intervals : ", new_combine_intervals)
 
-
+    if new_combine_intervals[0][0] != 0.0:
+        new_combine_intervals.insert(0, [0.0, new_combine_intervals[0][0], '#'])
 
     # Créer le tier combiné et l'ajouter au TextGrid
-    combined_tier = tgio.IntervalTier("Combined", new_combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
-    combined_textgrid.addTier(combined_tier)
+    if tier == 'TokensAlign':
+        combined_tier = tgio.IntervalTier("Combined", new_combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
+    if tier == 'SyllAlign':
+        combined_tier = tgio.IntervalTier("SyllSil", new_combine_intervals, minT=0, maxT=combined_textgrid.maxTimestamp)
 
-    # Sauvegarder le nouveau TextGrid
-    combined_textgrid.save(output_path)
+    return combined_tier
+
+def save_textgrid(token_syl_tier, syllsil_tier, output_path):
+    # Create a new TextGrid object
+    new_textgrid = tgio.Textgrid()
+
+    # Add the tiers to the new TextGrid
+    new_textgrid.addTier(token_syl_tier)
+    new_textgrid.addTier(syllsil_tier)
+
+    new_textgrid.save(output_path)
+
 
 # base_folder = "./TEXTGRID_WAV_nongold/"
-base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN/"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_1pt/"
 tsv_folder = "./TSV/"
 # pitchtier_folder = "./Praat/non_gold/"
 pitchtier_folder = "./Praat/"
@@ -313,11 +421,13 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
             # if file.endswith("_M-ipus.TextGrid"):
             if file.endswith("_MG-ipus.TextGrid"):
                 ipus_files.append(file)
+
             # elif file.endswith("_M-id.TextGrid"):
             elif file.endswith("_MG-id.TextGrid"):
                 id_files.append(file)
             elif file.endswith("_MG-syll.TextGrid"):
                 syll_files.append(file)
+
             # elif file.endswith("_M.TextGrid"):
             elif file.endswith("_MG.TextGrid"):
                 sent_files.append(file)
@@ -354,13 +464,14 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     # Construct the output path for syl_tok tier
                     # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
                     syl_tok_output_path = ipus_textgrid_path.replace("_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid")
-                    # output_tsv_path = os.path.join(subdir_path, ipus_file.replace("_M-ipus.TextGrid", "_silences.tsv"))
 
                     # Create the syl_tok tier and align the silences
                     # print(file, ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
-                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN/PRT_05/PRT_05_Ghetto-Life_MG-syl_tok.TextGrid":
-                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN/KAD_12/KAD_12_Mechanic-At-Work_MG-syl_tok.TextGrid":
-                    create_tier(ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
+                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN_2pt_15ms/WAZL_15/WAZL_15_MC-Abi_MG-syl_tok.TextGrid":
+                    combined_tier = create_tier(ipus_textgrid_path, id_textgrid_path, 'TokensAlign')
+                    syll_tier = create_tier(ipus_textgrid_path, syll_textgrid_path, 'SyllAlign')
+                    save_textgrid(combined_tier, syll_tier, syl_tok_output_path)
+
                     align_silence(ipus_textgrid_path, syl_tok_output_path)
                     phrases_with_hash = detect_silence_in_sentence(id_textgrid_path, sent_textgrid_path, syl_tok_output_path)
                     all_phrases_with_hash.extend(phrases_with_hash)
@@ -368,8 +479,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Write the accumulated results to a TSV file
-# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_15mars.tsv")
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_14avril.tsv")
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_1pt_15ms.tsv")
 with open(output_tsv_path, 'w', encoding='utf-8') as f:
     for item in all_phrases_with_hash:
         f.write('\t'.join(item) + '\n')

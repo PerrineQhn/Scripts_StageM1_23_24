@@ -1,8 +1,8 @@
 import time
-
 from praatio import tgio
 import csv
 import os
+import time
 
 
 # Fonction pour obtenir tous les fichiers d'un répertoire
@@ -41,14 +41,13 @@ def extract_token_and_pause_times(textgrid_file_path):
     return tier_combined
 
 
-def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
+def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
     """Insert pauses into the non-gold sentences based on the TextGrid."""
     adjusted_non_gold_sentences = []
     print(non_gold_sentences)
 
     punctuation_list = ['>', '<', '//', '?//', '[', ']', '{', '}', '|c', '>+', '||', '&//', '(', ')', '|r', '>=', '//+',
-                        '<+',
-                        '?//]', '//]', '//=', '!//', '?//=', '!//=', '//)', '|a', '&?//', '!//]', '&//]', '//&', '!//]',
+                        '<+', '?//]', '//]', '//=', '!//', '?//=', '!//=', '//)', '|a', '&?//', '!//]', '&//]', '//&', '!//]',
                         '&//]', '//&', '?//)', '!//)']
     i = 0
     sentences_list = [word for s in non_gold_sentences for word in s]
@@ -206,10 +205,13 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                     i = i + 1
 
             elif "'" in token and "'" not in token_label and token.upper() != "A'AH":
-                print(sentence[j], j, sentences_list[idx_sentences_list], idx_sentences_list, i, token_label,
-                      ' "'" in token and "'" not in token_label')
+                print(filename)
+                print(sentence[j], j, sentences_list[idx_sentences_list], idx_sentences_list, i, token_label, token, sentence,
+                      ' "\'" in token and "\'" not in token_label')
+                # time.sleep(11)
                 move_step = 0
                 if token_label.upper() == 'DO':
+                    print('DO', tier[i + 1][0])
                     tmp = tier[i + 1][0]
                     if tier[i + 1][0] == '#' and tier[i + 2][0].upper() == 'T':
                         new_sentence.append('#')
@@ -292,9 +294,17 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                 if token_label.upper() == 'WHAT':
                     token_label = token_label + "'" + tier[i + 1][0]
                     move_step = 2
-                if token_label.upper() == 'DAT':
+
+                if token_label.upper() == 'DAT' and filename not in ['BEN_08_Egusi-And-Banga-Soup_MG', 
+                                                                     'ABJ_INF_10_Women-Battering_MG', 
+                                                                     'KAD_03_Why-Men-Watch-Football_MG', 
+                                                                     'LAG_37_Soap-Making_MG',
+                                                                     'IBA_23_Bitter-Leaf-Soup_MG',
+                                                                     'LAG_11_Adeniyi-Lifestory_MG',
+                                                                     'WAZA_10_Bluetooth-Lifestory_MG']:
                     token_label = token_label + "'" + tier[i + 1][0]
                     move_step = 2
+                    
                 if token_label.upper() == 'HM':
                     if tier[i + 1][0] == '#':
                         token_label = token_label + "'" + 'm'
@@ -572,7 +582,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier):
                       'tier: ', token_label, tier[i][0], i,
                       'new sentence: ', new_sentence)
             else:
-
+                print(filename)
                 print(token, j, sentences_list[idx_sentences_list], idx_sentences_list, i, token_label,
                       '====================else')
                 time.sleep(1000)
@@ -621,9 +631,8 @@ def main():
     # Chemins des répertoires
     gold_dir = "SUD_Naija-NSC-master/"
     non_gold_dir = "SUD_Naija-NSC-master-gold-non-gold-TALN/"
-    textgrid_dir = "TEXTGRID_WAV_gold_non_gold_TALN/"
-    output_dir = "TSV/TSV_sentences_gold_non_gold_TALN/"
-    # output_dir = "./"
+    textgrid_dir = "TEXTGRID_WAV_gold_non_gold_TALN_1pt/"
+    output_dir = "TSV/TSV_sentences_gold_non_gold_TALN/1pt/"
 
     # Obtenir tous les fichiers
     gold_files = get_files_from_directory(gold_dir, '.conllu')
@@ -648,7 +657,7 @@ def main():
 
             output_tsv_file_path = os.path.join(output_dir, base_name + '.tsv')
             # output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
-            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences-14avril.tsv')
+            output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences-1pt.tsv')
 
             if not os.path.exists(output_global_tsv_file_path):
                 with open(output_global_tsv_file_path, 'w', newline='', encoding='utf-8') as file:
@@ -668,7 +677,7 @@ def main():
 
                     tier_combined = extract_token_and_pause_times(textgrid_file)
                     non_gold_sentences = extract_sentences(non_gold_file)
-                    adjusted_non_gold_sentences = insert_pauses_in_non_gold_sentences(non_gold_sentences, tier_combined)
+                    adjusted_non_gold_sentences = insert_pauses_in_non_gold_sentences(non_gold_sentences, tier_combined, base_name)
 
                     # Writing to TSV
                     write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_tsv_file_path)
