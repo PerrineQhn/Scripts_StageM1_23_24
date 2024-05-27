@@ -216,9 +216,9 @@ def merge_gold_non_gold(directory, directory_gold, tiers, tiers_combined, base_n
 # base_folder = './TEXTGRID_WAV_nongold'
 # merged = './MERGED/non_gold'
 
-base_folder = 'TEXTGRID_WAV_gold_non_gold_TALN_1pt/'
+base_folder = 'TEXTGRID_WAV_gold_non_gold_TALN_10-05_05ms/'
 base_folder_gold = 'TEXTGRID_WAV/'
-merged = 'MERGED/gold_non_gold_1pt/'
+merged = 'MERGED/gold_non_gold_10-05_05ms/'
 
 
 for subdir in os.listdir(base_folder):

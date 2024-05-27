@@ -7,7 +7,7 @@ from modif_ipus_tier import *
 # Path to the folder containing subfolders
 # base_folder = "./TEXTGRID_WAV"
 # base_folder = "./TEXTGRID_WAV_nongold"
-base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_1pt"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_10-05_05ms"
 praat_folder = "./Praat"
 
 # Iterate through all the subfolders

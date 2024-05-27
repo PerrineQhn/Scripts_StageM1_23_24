@@ -137,7 +137,7 @@ def create_tier(ipus_path, tokens_path, tier:str):
         if ipu_label == '#':
             print('#', ipu_start, ipu_end, token_start, token_end, last_combine_end)
 
-            # if (ipu_end - ipu_start) < 0.15:
+            # if (ipu_end - ipu_start) < 0.05:
             #     is_diese_inf = True
             #     ipu_start_tmp = ipu_start
             #     pos_ipu += 1
@@ -304,6 +304,7 @@ def create_tier(ipus_path, tokens_path, tier:str):
         combine_intervals.insert(0, [0.0, combine_intervals[0][0], '#'])
 
     print("combine_intervals Origin : ", combine_intervals)
+    print(ipus_path)
     for i in range(1, len(combine_intervals)):
         if combine_intervals[i-1][1] < combine_intervals[i][0]:
             combine_intervals.insert(i, [combine_intervals[i-1][1], combine_intervals[i][0], '*'])
@@ -349,9 +350,13 @@ def create_tier(ipus_path, tokens_path, tier:str):
 
         else:
             if combine_intervals[idx][0] == combine_intervals[idx-1][0]:
-                print("\nZZ", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
-                combine_intervals[idx][0] = new_combine_intervals[-1][1]
-                new_combine_intervals.append(combine_intervals[idx])
+                if combine_intervals[idx-1] == combine_intervals[idx]:
+                    print("\nZZX", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
+                    continue
+                else:
+                    print("\nZX", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
+                    combine_intervals[idx][0] = new_combine_intervals[-1][1]
+                    new_combine_intervals.append(combine_intervals[idx])
 
             elif combine_intervals[idx][0] < combine_intervals[idx-1][1]:
                 if combine_intervals[idx][0] == 0.0:
@@ -359,13 +364,18 @@ def create_tier(ipus_path, tokens_path, tier:str):
                     combine_intervals[idx][0] = combine_intervals[idx-1][1]
                     new_combine_intervals.append(combine_intervals[idx])
                 else:
-                    print("\nZZZ", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
+                    print("\nZT", combine_intervals[idx], combine_intervals[idx-1], new_combine_intervals[-1])
                     combine_intervals[idx][0] = new_combine_intervals[-1][1]
-                    new_combine_intervals.append(combine_intervals[idx])
+                    if combine_intervals[idx][0] < combine_intervals[idx][1]:
+                        new_combine_intervals.append(combine_intervals[idx])
+                    else:
+                        print(" ******  combine_intervals[idx][0] == combine_intervals[idx][1]", combine_intervals[idx], new_combine_intervals[-1])
+                        continue
             
             else:
                 print("add interval", combine_intervals[idx], "\n")
                 new_combine_intervals.append(combine_intervals[idx])
+
     print("\nnew intervals : ", new_combine_intervals)
 
     if new_combine_intervals[0][0] != 0.0:
@@ -391,7 +401,7 @@ def save_textgrid(token_syl_tier, syllsil_tier, output_path):
 
 
 # base_folder = "./TEXTGRID_WAV_nongold/"
-base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_1pt/"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_10-05_05ms/"
 tsv_folder = "./TSV/"
 # pitchtier_folder = "./Praat/non_gold/"
 pitchtier_folder = "./Praat/"
@@ -467,7 +477,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
 
                     # Create the syl_tok tier and align the silences
                     # print(file, ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
-                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN_2pt_15ms/WAZL_15/WAZL_15_MC-Abi_MG-syl_tok.TextGrid":
+                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN_15ms_02-04/ABJ_GWA_12/ABJ_GWA_12_Accident_MG-syl_tok.TextGrid":
                     combined_tier = create_tier(ipus_textgrid_path, id_textgrid_path, 'TokensAlign')
                     syll_tier = create_tier(ipus_textgrid_path, syll_textgrid_path, 'SyllAlign')
                     save_textgrid(combined_tier, syll_tier, syl_tok_output_path)
@@ -479,7 +489,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Write the accumulated results to a TSV file
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_1pt_15ms.tsv")
+output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_10-05_05ms.tsv")
 with open(output_tsv_path, 'w', encoding='utf-8') as f:
     for item in all_phrases_with_hash:
         f.write('\t'.join(item) + '\n')
