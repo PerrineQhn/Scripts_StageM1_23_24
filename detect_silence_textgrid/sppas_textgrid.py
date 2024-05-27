@@ -1,7 +1,7 @@
 import os
 import subprocess
 from tqdm import tqdm
-from modif_ipus_tier import *
+from Python_Stage_23_24.detect_silence_textgrid.modif_ipus_tier import *
 
 
 # Path to the folder containing subfolders
