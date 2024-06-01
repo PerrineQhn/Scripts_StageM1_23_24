@@ -1,33 +1,48 @@
-from praatio import tgio
+"""
+Script pour la correction de la durée des intervalles de silence dans le fichier TextGrid des IPUs.
+
+Requis:
+- Les fichiers TextGrid des IPUs
+
+Peut se lancer directement dans le terminal avec la commande:
+python3 modif_ipus_tier.py
+
+ou via le script 1-sppas_textgrid.py
+"""
+
 import os
 from collections import defaultdict
+
+from praatio import tgio
 from tqdm import tqdm
 
 
 def pitchtier_count_silence_points(pitch_file: str, start: float, end: float) -> tuple:
     """
-    si |start - first_number| > 0.1 et chaque points liste on une différence de 0.1 par rapport au points précédent et |end-last_number| <= 0.1 , alors le end = le dernier point.
-    si |start - first_number| <= 0.1 et |end-last_number| > 0.1 et chaque points liste on une différence de 0.1 par rapport au points précédent, alors le start = le dernier point.
-    si |start - first_number| > 0.1 et |end - last_number| > 0.1 et chaque points liste on une différence de 0.1 par rapport au points précédent, 
-    alors modification de l'intervalle # et ajout d'un intervale IPU et #, #_1 start = start et end = first_number, IPU start = first_number end = last_number et #_2 start = last_number end = end.
-    si |s-fist_number| <= 0.1 et |end - last_number| <= 0.1 et dans la liste il y a deux points qui se suivent mais qui ont une différence > 0.1 (ex: nombre3 et nombre4), alors start = nombre3 et end = nombre4.
+    Compter les points de silence dans le fichier PitchTier.
 
     Parameters:
-    - pitch_file (str): the path to the PitchTier file
-    - start (float): the start value
-    - end (float): the end value
+    - pitch_file (str): chemin du fichier PitchTier
+    - start (float): la valeur de début
+    - end (float): la valeur de fin
 
     Returns:
-    - tuple: Adjusted end time, start time, number of points, and a flag indicating if a new interval is needed.
+    - tuple: le nombre de points de silence
+
+    Variables:
+    - point_count (int): le nombre de points
+    - point_list (list): la liste des points
     """
     point_count = 0
     point_list = []
-    
-    with open(pitch_file, 'r') as file:
+
+    with open(pitch_file, "r") as file:
         lignes = file.readlines()
         for ligne in lignes:
             if "number =" in ligne:
-                nombre = float(ligne.split('=')[1].strip())  # Ensure any extra whitespace is removed
+                nombre = float(
+                    ligne.split("=")[1].strip()
+                )  # Ensure any extra whitespace is removed
                 if start <= nombre <= end:
                     point_count += 1
                     point_list.append(nombre)
@@ -35,20 +50,37 @@ def pitchtier_count_silence_points(pitch_file: str, start: float, end: float) ->
     # print(f"Checked points from {start} to {end}: {point_count} points found, {point_list}, \nnew_start {new_start}, new_end {new_end}, new_interval {new_interval}\n")
     return point_list
 
-def create_intervals_automatically(start, end, points):
-    """Automatically create intervals based on points."""
+
+def create_intervals_automatically(start: float, end: float, points: list) -> list:
+    """
+    Création d'intervalle de façon automatique avec la correction des intervalles #.
+
+    Parameters:
+    - start (float): la valeur de début
+    - end (float): la valeur de fin
+    - points (list): la liste des points
+
+    Returns:
+    - list: la liste des intervalles
+
+    Variables:
+    - intervals (list): la liste des intervalles
+    - current_label (str): le label actuel
+    - previous_point (float): le point précédent
+    - list_points_continu (list): la liste des points continus
+    """
     intervals = []
-    current_label = '#'
+    current_label = "#"
     previous_point = start
     list_points_continu = []
 
     if points:
         # Initialisation pour le premier point
         if abs(points[0] - start) > 0.011:
-            current_label = '#'
+            current_label = "#"
             # intervals.append([start, points[0], current_label])
         elif abs(points[0] - start) <= 0.011:
-            current_label = 'ipu_'
+            current_label = "ipu_"
             list_points_continu.append(start)
 
         # Boucle à travers les points
@@ -63,36 +95,51 @@ def create_intervals_automatically(start, end, points):
                 # print('hors de la liste', point)
                 if list_points_continu:
                     # print('******************************liste de points', list_points_continu)
-                    intervals.append([list_points_continu[0], list_points_continu[-1], 'ipu_'])
+                    intervals.append(
+                        [list_points_continu[0], list_points_continu[-1], "ipu_"]
+                    )
                     list_points_continu = []
-            
-                intervals.append([previous_point, point, '#'])
+
+                intervals.append([previous_point, point, "#"])
 
             if point == points[-1]:
                 if list_points_continu:
                     # print('******************************liste de points', list_points_continu)
                     if abs(end - points[-1]) > 0.011:
-                        intervals.append([list_points_continu[0], list_points_continu[-1], 'ipu_'])
-                        intervals.append([list_points_continu[-1], end, '#'])
+                        intervals.append(
+                            [list_points_continu[0], list_points_continu[-1], "ipu_"]
+                        )
+                        intervals.append([list_points_continu[-1], end, "#"])
                     elif abs(end - points[-1]) <= 0.011:
-                        intervals.append([list_points_continu[0], end, 'ipu_'])
+                        intervals.append([list_points_continu[0], end, "ipu_"])
 
             previous_point = point
-        
+
     # print('start', start, 'end', end, 'points', points, '\nintervals', intervals, '\n')
-    
+
     return intervals
 
-def correct_intervals_limite_duration(intervals, limite=0.15):
-    """ 
-    Correct intervals with end-start < 0.15 for #. 
-    If end-start < 0.15, we skip the interval and the next start of the next interval is egal to the end before the skip interval.
+
+def correct_intervals_limite_duration(intervals: list, limite: float = 0.10) -> list:
+    """
+    Correction des intervalles avec une durée inférieure à 0.10s par défaut mais peut être modifié.
+
+    Parameters:
+    - intervals (list): liste des intervalles
+    - limite (float): la limite de durée
+
+    Returns:
+    - list: liste des intervalles corrigés
+
+    Variables:
+    - corrected_intervals (list): liste des intervalles corrigés
+    - previous_end (float): la valeur de fin précédente
     """
     corrected_intervals = []
     previous_end = 0
     for interval in intervals:
         start, end, label = interval
-        if end - start < limite and label == '#':
+        if end - start < limite and label == "#":
             previous_end = start
             continue
         else:
@@ -102,16 +149,41 @@ def correct_intervals_limite_duration(intervals, limite=0.15):
             previous_end = end
     return corrected_intervals
 
-def get_total_duration(textgrid_file):
-    """Retrieve the total duration from a PitchTier file."""
+
+def get_total_duration(textgrid_file: str) -> float:
+    """
+    Obtenir la durée totale du fichier TextGrid.
+
+    Parameters:
+    - textgrid_file (str): le chemin du fichier TextGrid
+
+    Returns:
+    - float: la durée totale
+
+    Variables:
+    - tier_list (list): la liste des intervalles de la tier "trans"
+    """
     textgrid_tier = tgio.openTextgrid(textgrid_file)
-    tier_list = textgrid_tier.tierDict['trans'].entryList
+    tier_list = textgrid_tier.tierDict["trans"].entryList
     # print(tier_list)
 
     return tier_list[-1][1]
 
-def merge_intervals(intervals):
-    """ Merge consecutive non-silence intervals and rename labels. """
+
+def merge_intervals(intervals: list):
+    """
+    Fusionner les intervalles
+
+    Parameters:
+    - intervals (list): liste des intervalles
+
+    Returns:
+    - list: liste des intervalles fusionnés
+
+    Variables:
+    - merged_intervals (list): liste des intervalles fusionnés
+    - i (int): l'index
+    """
     merged_intervals = []
     i = 0
     while i < len(intervals):
@@ -122,33 +194,46 @@ def merge_intervals(intervals):
             i += 1
             continue
 
-        # If the current interval is non-silence and not the last one
+        # Si l'intervalle actuel n'est pas un silence et qu'il y a un intervalle suivant
         if "#" not in current_label and i + 1 < len(intervals):
-            # Initialize merged interval data
+            # Initialise l'intervalle fusionné
             merged_start = current_start
             merged_label = current_label
-            # Look ahead to find the end of the consecutive non-silence intervals
+            # Regarde si l'intervalle suivant est un silence
             while i + 1 < len(intervals) and "#" not in intervals[i + 1][2]:
                 i += 1
                 current_end = intervals[i][1]
             merged_intervals.append([merged_start, current_end, merged_label])
 
+        # Si l'intervalle actuel est un silence et qu'il y a un intervalle suivant
         elif "#" in current_label and i + 1 < len(intervals):
             merged_start = current_start
-            merged_label = '#'
+            merged_label = "#"
             while i + 1 < len(intervals) and "#" in intervals[i + 1][2]:
                 i += 1
                 current_end = intervals[i][1]
             merged_intervals.append([merged_start, current_end, merged_label])
 
         else:
-            # If it's a silence interval or there are no more intervals to check
+            # Si l'intervalle actuel est un silence ou s'il n'y a pas d'intervalle suivant
             merged_intervals.append([current_start, current_end, current_label])
         i += 1
     return merged_intervals
 
-def rename_intervals(intervals):
-    """ Rename intervals to maintain numbering after merging. """
+
+def rename_intervals(intervals: list) -> list:
+    """
+    Renommer les intervalles IPU en ipu_1, ipu_2, etc.
+
+    Parameters:
+    - intervals (list): liste des intervalles
+
+    Returns:
+    - list: liste des nouveaux intervalles
+
+    Variables:
+    - new_intervals (list): liste des nouveaux intervalles
+    """
     new_intervals = []
     counter = 1
     for interval in intervals:
@@ -161,29 +246,75 @@ def rename_intervals(intervals):
             counter += 1
     return new_intervals
 
-def correct_intervals(intervals):
-    """ Correct intervals with start >= end 
-    if start > end, start = end de l'intervalle précédent. et end = start de l'intervalle suivant."""
+
+def correct_intervals(intervals: list) -> list:
+    """
+    Corrige les intervalles en fonction de la durée de l'intervalle précédent et suivant.
+    Si start > end, start = end de l'intervalle précédent et end = start de l'intervalle suivant.
+
+    Parameters:
+    - intervals (list): liste des intervalles
+
+    Returns:
+    - list: liste des intervalles corrigés
+
+    Variables:
+    - corrected_intervals (list): liste des intervalles corrigés
+    - previous_end (float): la valeur de fin précédente
+    """
     corrected_intervals = []
     previous_end = 0
-    for interval in intervals:
+    for i, interval in enumerate(intervals):
         start, end, label = interval
         if start >= end:
             start = previous_end
-            end = intervals[intervals.index(interval) + 1][0]
+            if i + 1 < len(intervals):
+                end = intervals[i + 1][0]
+            else:
+                end = start + 0.01  # Ensure there's a minimal duration for the last interval
         previous_end = end
         corrected_intervals.append([start, end, label])
     return corrected_intervals
 
-def correct_silence_duration(textgrid_file, ipu_textgrid, pitch_path, output):
+
+def correct_silence_duration(
+    textgrid_file: str, ipu_textgrid: str, pitch_path: str, output: str
+) -> dict:
+    """
+    Correction de la durée des intervalles de silence.
+
+    Parameters:
+    - textgrid_file (str): chemin du fichier TextGrid
+    - ipu_textgrid (str): chemin du fichier TextGrid des IPUs
+    - pitch_path (str): chemin du fichier PitchTier
+    - output (str): chemin du fichier de sortie
+
+    Returns:
+    - dict: dictionnaire des points de silence
+
+    Variables:
+    - textgrid_ipus (Textgrid): le fichier TextGrid des IPUs
+    - new_intervals (list): la liste des nouveaux intervalles
+    - ipu_intervals (list): la liste des intervalles des IPUs
+    - pitchtier_silence (dict): le dictionnaire des points de silence
+    - previous_ipu_end (float): la valeur de fin précédente
+    - total_duration (float): la durée totale
+    - count_ipu (int): le nombre d'IPUs
+    - interval_count (int): le compteur des intervalles
+    - ipu (list): l'intervalle IPU
+    - ipu_start (float): la valeur de début de l'IPU
+    - ipu_end (float): la valeur de fin de l'IPU
+    - ipu_label (str): le label de l'IPU
+    - point_list (list): la liste des points de silence
+    """
     textgrid_ipus = tgio.openTextgrid(ipu_textgrid)
     new_intervals = []
-    ipu_intervals = textgrid_ipus.tierDict['IPUs'].entryList
+    ipu_intervals = textgrid_ipus.tierDict["IPUs"].entryList
     pitchtier_silence = defaultdict(dict)
     previous_ipu_end = 0
 
     total_duration = get_total_duration(textgrid_file)
-    
+
     count_ipu = len(ipu_intervals)
     interval_count = 0
 
@@ -197,41 +328,48 @@ def correct_silence_duration(textgrid_file, ipu_textgrid, pitch_path, output):
         ipu_end, ipu_label = ipu[1], ipu[2]
         interval_count += 1
 
-        if interval_count == count_ipu-1:
+        if interval_count == count_ipu - 1:
             ipu_end = total_duration
 
         if "#" in ipu_label:
             point_list = pitchtier_count_silence_points(pitch_path, ipu_start, ipu_end)
 
             if point_list:
-                new_intervals.extend(create_intervals_automatically(ipu_start, ipu_end, point_list))
+                new_intervals.extend(
+                    create_intervals_automatically(ipu_start, ipu_end, point_list)
+                )
 
             # Update the end of the previous non-silence interval if necessary
-            if previous_ipu_end and new_intervals and new_intervals[-1][1] == previous_ipu_end:
+            if (
+                previous_ipu_end
+                and new_intervals
+                and new_intervals[-1][1] == previous_ipu_end
+            ):
                 new_intervals[-1][1] = ipu_start
 
         else:
             new_intervals.append([ipu_start, ipu_end, ipu_label])
-        
+
         if ipu_end > previous_ipu_end:
             previous_ipu_end = ipu_end
-        
+
         # print('-------Previous IPU end:', previous_ipu_end, '\n')
 
         if ipu_start < ipu_end:
-            print(f"Interval {interval_count}/{count_ipu}: {ipu_start} to {ipu_end} ({ipu_end - ipu_start} s) - {ipu_label}")
+            print(
+                f"Interval {interval_count}/{count_ipu}: {ipu_start} to {ipu_end} ({ipu_end - ipu_start} s) - {ipu_label}"
+            )
         else:
             print(f"Skipping interval with start >= end: {ipu_start} >= {ipu_end}")
             continue
 
     if new_intervals[0][0] != 0.0:
-        new_intervals.insert(0, [0.0, new_intervals[0][0], '#'])
-    
+        new_intervals.insert(0, [0.0, new_intervals[0][0], "#"])
+
     # for i in range(1, len(new_intervals)):
     #     if new_intervals[i-1][1] < new_intervals[i][0]:
     #         new_intervals.insert(i, [new_intervals[i-1][1], new_intervals[i][0], '*'])
 
-    
     new_intervals = correct_intervals_limite_duration(new_intervals, limite=0.10)
     new_intervals = merge_intervals(new_intervals)
     new_intervals = rename_intervals(new_intervals)
@@ -240,14 +378,24 @@ def correct_silence_duration(textgrid_file, ipu_textgrid, pitch_path, output):
     new_intervals = correct_intervals(new_intervals)
     # print('new_intervals_2', new_intervals, '\n')
 
+    for interval in new_intervals:
+        if interval[0] >= interval[1]:
+            print(f"Anomaly: startTime={interval[0]}, stopTime={interval[1]}, label={interval[2]}")
+            interval[1] = interval[0] + 0.01
+
+    for i in range(1, len(new_intervals)):
+        if new_intervals[i-1][1] > new_intervals[i][0]:
+            new_intervals[i][0] = new_intervals[i-1][1]
+
     new_ipus_textgrid = tgio.Textgrid()
     new_ipus_textgrid.addTier(tgio.IntervalTier("IPUs", new_intervals))
     new_ipus_textgrid.save(output)
 
     return pitchtier_silence
 
+
 def main():
-    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms/"
+    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad2/"
     pitchtier_folder = "./Praat/"
 
     for subdir in tqdm(os.listdir(base_folder)):
@@ -264,10 +412,25 @@ def main():
                 # print(ipus_file_path)
                 textgrid_file = ipus_file_path.replace("-ipus.TextGrid", ".TextGrid")
                 # print(textgrid_file)
-                pitch_path = os.path.join(pitchtier_folder, textgrid.replace("-ipus.TextGrid", ".PitchTier"))
+                pitch_path = os.path.join(
+                    pitchtier_folder, textgrid.replace("-ipus.TextGrid", ".PitchTier")
+                )
 
-                if ipus_file_path == "./TEXTGRID_WAV_gold_non_gold_TALN_15ms_02-04/BEN_36/BEN_36_Clever-Girl_MG-ipus.TextGrid":
-                    correct_silence_duration(textgrid_file, ipus_file_path, pitch_path, os.path.join(subdir_path, textgrid.replace("-ipus.TextGrid", "-new_ipus.TextGrid")))
+                # if (
+                #     ipus_file_path
+                #     == "./TEXTGRID_WAV_gold_non_gold_TALN_15ms_02-04/BEN_36/BEN_36_Clever-Girl_MG-ipus.TextGrid"
+                # ):
+                print(f"Processing {ipus_file_path}")
+                correct_silence_duration(
+                    textgrid_file,
+                    ipus_file_path,
+                    pitch_path,
+                    os.path.join(
+                        subdir_path,
+                        textgrid.replace("-ipus.TextGrid", "-ipus.TextGrid"),
+                    ),
+                )
+
 
 if __name__ == "__main__":
     main()

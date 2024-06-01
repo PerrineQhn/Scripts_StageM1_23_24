@@ -1,11 +1,34 @@
+"""
+Ce script permet d'ajuster les phrases non gold en insérant des pauses basées sur le fichier TextGrid.
+
+Il permet ainsi de pouvoir comparer les phrases gold et non gold après l'inserion des pauses.
+
+Requis:
+- Le fichier .conllu
+- Textgrids -syl_tok.TextGrid (obtenus en utilisant combine_silence_textgrid.py)
+
+Commande:
+python3 ./Python_Stage_23_24/detect_silence_textgrid/3-compare_gold_non_gold.py
+"""
+
 import csv
 import os
 import time
+
 from praatio import tgio
 
 
-# Fonction pour obtenir tous les fichiers d'un répertoire
-def get_files_from_directory(directory_path, extension):
+def get_files_from_directory(directory_path: str, extension: str) -> list:
+    """
+    Obtenir tous les fichiers d'un répertoire avec une extension donnée.
+
+    Parameters:
+    directory_path (str): Le chemin du répertoire.
+    extension (str): L'extension des fichiers à récupérer.
+
+    Returns:
+    list: La liste des fichiers du répertoire avec l'extension donnée.
+    """
     return [
         os.path.join(directory_path, file)
         for file in os.listdir(directory_path)
@@ -13,8 +36,19 @@ def get_files_from_directory(directory_path, extension):
     ]
 
 
-def extract_sentences(conllu_file_path):
-    """Extract gold sentences from the .conllu file."""
+def extract_sentences(conllu_file_path: str) -> list:
+    """
+    Extraire les phrases du fichier .conllu.
+
+    Parameters:
+    conllu_file_path (str): Le chemin du fichier .conllu.
+
+    Returns:
+    list: La liste des phrases extraites du fichier .conllu.
+
+    Variables:
+    gold_sentences (list): La liste des phrases extraites du fichier .conllu.
+    """
     gold_sentences = []
     with open(conllu_file_path, "r", encoding="utf-8") as file:
         for line in file:
@@ -30,8 +64,19 @@ def extract_sentences(conllu_file_path):
     return gold_sentences
 
 
-def extract_token_and_pause_times(textgrid_file_path):
-    """Extract the times of tokens and pauses from the TextGrid file."""
+def extract_token_and_pause_times(textgrid_file_path: str) -> list:
+    """
+    Extraire les temps des tokens et des pauses du fichier TextGrid.
+
+    Parameters:
+    textgrid_file_path (str): Le chemin du fichier TextGrid.
+
+    Returns:
+    list: La liste des temps des tokens et des pauses.
+
+    Variables:
+    tier_combined (list): La liste des temps des tokens et des pauses.
+    """
     tg = tgio.openTextgrid(textgrid_file_path)
     tier = tg.tierDict["Combined"]
 
@@ -44,8 +89,30 @@ def extract_token_and_pause_times(textgrid_file_path):
     return tier_combined
 
 
-def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
-    """Insert pauses into the non-gold sentences based on the TextGrid."""
+def insert_pauses_in_non_gold_sentences(
+    non_gold_sentences: list, tier: list, filename: str
+) -> list:
+    """
+    Insérer des pauses dans les phrases non gold basées sur le TextGrid.
+
+    Parameters:
+    non_gold_sentences (list): La liste des phrases non gold.
+    tier (list): La liste des temps des tokens et des pauses.
+    filename (str): Le nom du fichier.
+
+    Returns:
+    list: La liste des phrases non gold ajustées.
+
+    Variables:
+    adjusted_non_gold_sentences (list): La liste des phrases non gold ajustées.
+    punctuation_list (list): La liste des ponctuations.
+    diese_punct (list): La liste des ponctuations avec avant un '#'.
+    sentences_list (list): La liste des mots des phrases non gold.
+    idx_sentences_list (int): L'index de la liste des mots des phrases non gold.
+    l (int): L'index de la liste des phrases non gold.
+    i (int): L'index de la liste des temps des tokens et des pauses.
+    j (int): L'index de la liste des mots des phrases non gold.
+    """
     adjusted_non_gold_sentences = []
     print(non_gold_sentences)
 
@@ -98,7 +165,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                 x.replace("~", "") for x in sentences_list if x != punctuation
             ]
     idx_sentences_list = 0
-    
+
     l = 0
     while l < len(non_gold_sentences):
         sentence = non_gold_sentences[l]
@@ -127,7 +194,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                         tmp = new_sentence[-2]
                         new_sentence[-2] = new_sentence[-1]
                         new_sentence[-1] = tmp
-                        
+
                     try_time = 3
                     idx_tier_try = i + 1
                     idx_word_try = idx_sentences_list
@@ -149,7 +216,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                         ):
                             break
 
-                        # If we encounter another '#', it means that this '#' doesn't hide characters
+                        # Si nous rencontrons un autre '#', cela signifie que ce '#' ne cache pas de caractères
                         if idx_tier_try < len(tier) and tier[idx_tier_try][0] == "#":
                             current_try = try_time
                             print(
@@ -164,12 +231,20 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             )
                             break
 
-                        if idx_tier_try < len(tier) - 1 and idx_word_try < len(sentences_list):
+                        if idx_tier_try < len(tier) - 1 and idx_word_try < len(
+                            sentences_list
+                        ):
                             idx_tier_try += 1
                             idx_word_try += 1
                         current_try += 1
 
-                    print("current_try < try_time: ", current_try, try_time)
+                    print(
+                        "current_try < try_time: ",
+                        current_try,
+                        try_time,
+                        sentences_list[idx_sentences_list],
+                    )
+
                     print(
                         "case token_label == #",
                         "sentence: ",
@@ -186,7 +261,23 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                         new_sentence,
                     )
 
-                    if current_try < try_time:  # hide somethings
+                    if current_try < try_time:  # token caché par #
+
+                        if (
+                            sentences_list[idx_sentences_list].upper() == "EH"
+                            and sentences_list[idx_sentences_list + 1].upper() == "ME"
+                        ):
+                            print(
+                                "EH",
+                                sentences_list[idx_sentences_list],
+                                tier[i][0],
+                                tier[i + 1][0],
+                                sentences_list[idx_sentences_list + 1],
+                            )
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
                         if (
                             idx_sentences_list < len(sentences_list) - 2
                             and sentences_list[idx_sentences_list].upper()
@@ -242,21 +333,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                                 )
                                 new_sentence = []
 
-                        # This condition is specific to WAZL_08_Edewor-Lifestory_MG
-                        if (
-                            idx_sentences_list < len(sentences_list)
-                            and sentences_list[idx_sentences_list].upper() == "WE"
-                            and sentences_list[idx_sentences_list + 1].upper() == "TALK"
-                            and sentences_list[idx_sentences_list + 2].upper() == "WE"
-                        ):
-                            new_sentence.append(sentence[j])
-                            idx_sentences_list += 1
-                            j += 1
-                            new_sentence.append(sentence[j])
-                            idx_sentences_list += 1
-                            j += 1
-
-                        # This condition is specific to ABJ_GWA_10_Steven-Lifestory_MG
+                        # Condition spécifique pour le fichier ABJ_GWA_10_Steven-Lifestory_MG
                         if (
                             idx_sentences_list < len(sentences_list)
                             and sentences_list[idx_sentences_list].upper() == "I"
@@ -270,24 +347,6 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             idx_sentences_list += 1
                             j += 1
 
-                        # LAG_11_Adeniyi-Lifestory_MG-syl_tok
-                        if (
-                            idx_sentences_list < len(sentences_list)
-                            and sentences_list[idx_sentences_list].upper() == "IF"
-                            and sentences_list[idx_sentences_list + 1].upper() == "I"
-                            and sentences_list[idx_sentences_list + 2].upper() == "IF"
-                        ):
-                            new_sentence.append(sentence[j])
-                            new_sentence.append(sentence[j + 1])
-                            idx_sentences_list += 1
-                            j += 2
-                            new_sentence.append(sentence[j])
-                            idx_sentences_list += 1
-                            j += 1
-                            new_sentence.append(sentence[j])
-                            idx_sentences_list += 1
-                            j += 1
-                        # This condition is specific to ABJ_GWA_10_Steven-Lifestory_MG
                         if (
                             idx_sentences_list < len(sentences_list)
                             and sentences_list[idx_sentences_list].upper() == "SO"
@@ -301,12 +360,66 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             idx_sentences_list += 1
                             j += 1
 
-                        # This condition is specific to WAZL_08_Edewor-Lifestory_MG
+                        # Condition spécifique pour le fichier ABJ_GWA_14
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list].upper() == "GO"
+                            and sentences_list[idx_sentences_list + 1].upper()
+                            == "STILL"
+                            and sentences_list[idx_sentences_list + 2].upper() == "E"
+                        ):
+
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        # Condition spécifique pour le fichier LAG_11_Adeniyi-Lifestory_MG
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 1] == "DO"
+                            and sentences_list[idx_sentences_list].upper() == "IF"
+                            and sentences_list[idx_sentences_list + 1].upper() == "I"
+                            and sentences_list[idx_sentences_list + 2].upper() == "IF"
+                            and sentences_list[idx_sentences_list + 3].upper() == "I"
+                        ):
+                            print(
+                                sentences_list[idx_sentences_list],
+                                sentences_list[idx_sentences_list - 1],
+                                sentence,
+                            )
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        # Condition spécifique pour le fichier WAZL_08_Edewor-Lifestory_MG
                         if (
                             idx_sentences_list < len(sentences_list)
                             and sentences_list[idx_sentences_list].upper() == "CON"
                             and sentences_list[idx_sentences_list + 1].upper()
                             == "HAPPEN"
+                        ):
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 1].upper() == "#"
+                            and sentences_list[idx_sentences_list].upper() == "WE"
+                            and sentences_list[idx_sentences_list + 1].upper() == "TALK"
+                            and sentences_list[idx_sentences_list + 2].upper() == "WE"
                         ):
                             new_sentence.append(sentence[j])
                             idx_sentences_list += 1
@@ -377,6 +490,15 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             token_label + tier[i + 1][0] + "'" + tier[i + 3][0]
                         )
                         move_step = 4
+                    elif (
+                        tier[i + 1][0].upper() == "N"
+                        and tier[i + 2][0].upper() == "#"
+                        and tier[i + 3][0].upper() == "LIKE"
+                    ):
+                        new_sentence.append("#")
+                        token_label = token_label + tier[i + 1][0] + "'t"
+                        move_step = 3
+
                     else:
                         print("This case has not been handled")
                         token_label = (
@@ -595,8 +717,10 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
 
                     if token_label.upper() == tier[idx_tier][0].upper():
                         print(
-                            "case   sentences_list[idx_sentences_list].upper() == token_label.upper(): "
-                            "tier[i-1][0] == #: idx_word_try < len(sentences_list):"
+                            "case   sentences_list[idx_sentences_list].upper() == token_label.upper(): ",
+                            sentences_list[idx_sentences_list],
+                            sentences_list[idx_word],
+                            "tier[i-1][0] == #: idx_word_try < len(sentences_list): "
                             "sentence: ",
                             token_label.upper(),
                             tier[idx_tier][0].upper(),
@@ -604,6 +728,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                         )
                         idx_tier += 1
                         c_tier += 1
+
                     elif "#" == tier[idx_tier][0]:
                         try_time = 3
                         idx_tier_try = idx_tier + 1
@@ -619,7 +744,9 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                                 sentences_list
                             ) and idx_tier_try < len(tier):
                                 print(
-                                    "case   sentences_list[idx_sentences_list].upper() == token_label.upper(): "
+                                    "case   sentences_list[idx_sentences_list].upper() == token_label.upper(): ",
+                                    sentences_list[idx_sentences_list],
+                                    sentences_list[idx_word],
                                     "tier[i-1][0] == #: idx_word_try < len(sentences_list):"
                                     "sentence: ",
                                     sentences_list[idx_word_try],
@@ -653,6 +780,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                                 idx_tier_try += 1
                                 idx_word_try += 1
                             current_try += 1
+
                         if current_try < try_time:  # hide somethings
                             flag_diese = True
                             print(
@@ -660,6 +788,8 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                                 "sentence: ",
                                 sentences_list[idx_word],
                                 idx_word,
+                                sentences_list[idx_sentences_list],
+                                idx_sentences_list,
                                 "tier: ",
                                 token_label.upper(),
                                 tier[idx_tier][0].upper(),
@@ -677,21 +807,26 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         c_word += 1
+                        continue
+
                     elif sentences_list[idx_word] in punctuation_list:
                         idx_word += 1
                         continue
+
                     elif flag_diese is True and (
                         sentences_list[idx_word].upper() == "I"
                         or sentences_list[idx_word].upper() == "'M"
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "SAID"
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "DI"
@@ -699,11 +834,53 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
-                        flag_diese is True and sentences_list[idx_word].upper() == "YOU"
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "SHE"
+                        and sentences_list[idx_sentences_list].upper() == "AS"
                     ):
                         idx_word += 1
                         continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "SAY"
+                        and sentences_list[idx_sentences_list].upper() == "EHN"
+                    ):
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "IF"
+                        and sentences_list[idx_sentences_list].upper() == "DO"
+                        and sentences_list[idx_word + 1].upper() == "I"
+                        and sentences_list[idx_word + 2].upper() == "IF"
+                    ):
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "EH"
+                        and sentences_list[idx_sentences_list].upper() == "DIS"
+                        and sentences_list[idx_word + 1].upper() == "DIS"
+                    ):
+                        idx_word += 1
+                        continue
+
+
+                    if (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "SMALL"
+                        and sentences_list[idx_sentences_list].upper() == "CON"
+                        and sentences_list[idx_word + 1].upper() == "CON"
+                        and sentences_list[idx_word + 2].upper() == "START"
+                    ):
+                        idx_word += 1
+                        continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "DOT"
@@ -711,6 +888,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "VERY"
@@ -718,6 +896,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "FIT"
@@ -725,11 +904,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
-                    elif (
-                        flag_diese is True and sentences_list[idx_word].upper() == "GO"
-                    ):
-                        idx_word += 1
-                        continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "WEY"
@@ -737,16 +912,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
-                    elif (
-                        flag_diese is True and sentences_list[idx_word].upper() == "IM"
-                    ):
-                        idx_word += 1
-                        continue
-                    elif (
-                        flag_diese is True and sentences_list[idx_word].upper() == "DEY"
-                    ):
-                        idx_word += 1
-                        continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "AM"
@@ -754,6 +920,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "TOO"
@@ -761,6 +928,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "ONE"
@@ -768,6 +936,16 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 2
                         continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word - 1].upper() == "SEY"
+                        and sentences_list[idx_word].upper() == "MAH"
+                        and sentences_list[idx_word + 1].upper() == "I"
+                    ):
+                        idx_word += 2
+                        continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "TO"
@@ -776,6 +954,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "E"
@@ -783,6 +962,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "WORK"
@@ -790,6 +970,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "FAKE"
@@ -797,6 +978,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "MY"
@@ -804,6 +986,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "EH"
@@ -811,6 +994,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "N"
@@ -818,6 +1002,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "WORK"
@@ -825,14 +1010,28 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
                     elif (
                         flag_diese is True
-                        and sentences_list[idx_word].upper() == "O"
-                        and sentences_list[idx_word + 1].upper() == "I"
-                        and sentences_list[idx_sentences_list].upper() == "DO"
+                        and sentences_list[idx_word].upper() == "DEY"
+                        and sentences_list[idx_sentences_list].upper() == "ON"
+                        and sentences_list[idx_word + 1].upper() == "GO"
+                        and sentences_list[idx_word + 2].upper() == "ON"
+                        and sentences_list[idx_word + 3].upper() == "NA"
                     ):
-                        idx_word += 2
+                        print("DEY ON GO ON NA")
+                        idx_word += 1
                         continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "YOURSELF"
+                        and sentences_list[idx_sentences_list].upper() == "PROTECT"
+                        and sentences_list[idx_word + 1].upper() == "PROTECT"
+                    ):
+                        idx_word += 1
+                        continue
+
                     elif (
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "COMMANDER"
@@ -840,9 +1039,52 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     ):
                         idx_word += 1
                         continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "GO"
+                        and sentences_list[idx_sentences_list].upper() == "STILL"
+                        and sentences_list[idx_word + 1].upper() == "STILL"
+                    ):
+                        print("XYU,,,,?????")
+                        idx_word += 3
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "GO"
+                        and sentences_list[idx_sentences_list].upper() != "STILL"
+                        and sentences_list[idx_sentences_list].upper() != "ON"
+                    ):
+                        print("GO !!!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True and sentences_list[idx_word].upper() == "IM"
+                    ):
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "DEY"
+                        and sentences_list[idx_sentences_list].upper() != "ON"
+                    ):
+                        print("DEY")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True and sentences_list[idx_word].upper() == "YOU"
+                    ):
+                        idx_word += 1
+                        continue
                     else:
                         break
                 print("c_tier == c_word:", c_tier, c_word)
+                # print(sentences_list[idx_sentences_list], sentences_list[idx_word])
+
                 if c_tier == c_word:
                     new_sentence.append(token)
                     print(
@@ -857,6 +1099,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     i = i + 1
                     j = j + 1
                     idx_sentences_list += 1
+
                 else:
                     new_sentence.append(token)
                     print(
@@ -881,6 +1124,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     "sentences_list: ",
                     sentences_list[idx_sentences_list],
                     idx_sentences_list,
+                    sentences_list[idx_word],
                     "tier: ",
                     token_label,
                     tier[i][0],
@@ -941,6 +1185,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             )
                             idx_sentences_list += 1
                             j += 1
+
                         # This condition is specific to WAZL_15_MAC-Abi_MG
                         if (
                             idx_sentences_list < len(sentences_list) - 1
@@ -961,6 +1206,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                             and tier[i][0].upper() == "I"
                         ):
                             break
+
                 print("new sentence: ", new_sentence)
                 if j < len(sentence):
                     print(
@@ -987,6 +1233,7 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
                     idx_sentences_list,
                     i,
                     token_label,
+                    sentences_list[idx_word],
                     "====================else",
                 )
                 time.sleep(1000)
@@ -996,8 +1243,27 @@ def insert_pauses_in_non_gold_sentences(non_gold_sentences, tier, filename):
     return adjusted_non_gold_sentences
 
 
-def write_to_tsv(gold_sentences, non_gold_sentences, output_file_path, filename=None):
-    """Write the gold and non-gold sentences to a TSV file."""
+def write_to_tsv(
+    gold_sentences: list,
+    non_gold_sentences: list,
+    output_file_path: str,
+    filename: str = None,
+) -> None:
+    """
+    Ecrire les phrases gold et non-gold dans un fichier TSV.
+
+    Parameters:
+    gold_sentences (list): Liste des phrases gold.
+    non_gold_sentences (list): Liste des phrases non-gold.
+    output_file_path (str): Chemin du fichier de sortie.
+    filename (str): Nom du fichier.
+
+    Returns:
+    None
+
+    Variables:
+    writer (csv.writer): Objet pour écrire dans le fichier.
+    """
     if filename:
         with open(output_file_path, "a", newline="", encoding="utf-8") as file:
             writer = csv.writer(file, delimiter="\t")
@@ -1011,32 +1277,12 @@ def write_to_tsv(gold_sentences, non_gold_sentences, output_file_path, filename=
                 writer.writerow([gold, non_gold])
 
 
-# # Paths
-# # WAZL_15_MC-Abi_MG
-# gold_conllu_file_path = 'WAZL_15_MC-Abi_MG.conllu'
-# non_gold_conllu_file_path = 'WAZL_15_MC-Abi_MG-non_gold.conllu'
-# textgrid_file_path = 'WAZL_15_MC-Abi_MG-syl_tok.TextGrid'
-# output_tsv_file_path = 'WAZL_15_MC-Abi_MG.tsv'
-
-# # Processing
-# gold_sentences = extract_sentences(gold_conllu_file_path)
-# new_gold_sentences = []
-# for sentence in gold_sentences:
-#     new_gold_sentences.append(' '.join(sentence))
-
-# tier_combined = extract_token_and_pause_times(textgrid_file_path)
-# non_gold_sentences = extract_sentences(non_gold_conllu_file_path)
-# adjusted_non_gold_sentences = insert_pauses_in_non_gold_sentences(non_gold_sentences, tier_combined)
-# # Writing to TSV
-# write_to_tsv(new_gold_sentences, adjusted_non_gold_sentences, output_tsv_file_path)
-
-
 def main():
     # Chemins des répertoires
     gold_dir = "SUD_Naija-NSC-master/"
     non_gold_dir = "SUD_Naija-NSC-master-gold-non-gold-TALN/"
-    textgrid_dir = "TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms/"
-    output_dir = "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms/"
+    textgrid_dir = "TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad/"
+    output_dir = "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms_webrtcvad/"
 
     # Obtenir tous les fichiers
     gold_files = get_files_from_directory(gold_dir, ".conllu")
@@ -1063,7 +1309,7 @@ def main():
             output_tsv_file_path = os.path.join(output_dir, base_name + ".tsv")
             # output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
             output_global_tsv_file_path = os.path.join(
-                output_dir, "all_sentences-04-05_10ms.tsv"
+                output_dir, "all_sentences-04-05_10ms_webrtcvad.tsv"
             )
 
             if not os.path.exists(output_global_tsv_file_path):
@@ -1075,10 +1321,10 @@ def main():
 
             if non_gold_file in non_gold_files:
                 print(f"Traitement de {base_name}")
-                # print(f"Gold: {gold_file}")
+                print(f"Gold: {gold_file}")
                 list_file = []
 
-                # if "WAZP_07" in gold_file:
+                # if "JOS_20" in gold_file:
                 if gold_file not in list_file:
                     gold_sentences = extract_sentences(gold_file)
                     new_gold_sentences = [

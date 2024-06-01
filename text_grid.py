@@ -169,7 +169,7 @@ dossier_conllu = '../SUD_Naija-NSC-master/non_gold/'
 for fichier in os.listdir(dossier_conllu):
     if fichier.endswith('MG.conllu') or fichier.endswith('M.conllu'):
         chemin_conllu = os.path.join(dossier_conllu, fichier)
-        # Generate the output TextGrid file name
+        # Génération du nom du fichier TextGrid de sortie
         nom_fichier_sans_extension = os.path.splitext(fichier)[0]
         if nom_fichier_sans_extension.startswith('ABJ'):
             folder = '_'.join(nom_fichier_sans_extension.split('_')[:3])

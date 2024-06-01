@@ -1,30 +1,36 @@
+"""
+Ce script est utilisé pour analyser les fichiers TextGrid et les fichiers TSV afin de comparer les # dans les fichiers gold et non gold.
+
+Requis :
+- Fichiers TextGrids merges obtenu à partir du script merge.py
+- TSVs contenant les phrases gold et non gold obtenus à partir du script compare_gold_non_gold.py
+
+Commande : 
+python3 ./Python_Stage_23_24/detect_silence_textgrid/5-stat_silence_gold-non_gold.py
+
+"""
+
 import csv
 import os
 import re
 from collections import defaultdict
+
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
-from matplotlib.ticker import FuncFormatter
+import pandas as pd
+import seaborn as sns
 from praatio import tgio
-
-"""
-
-python3 ./Python_Stage_23_24/stat_silence_gold-non_gold.py
-
-"""
 
 
 def compare_silence(
-    file_path,
-    file,
-    global_writer,
-    silence_durations,
-    all_tokensalign_durations,
-    all_combined_duration,
-    files_with_short_pauses,
-):
+    file_path: str,
+    file: str,
+    global_writer: csv.writer,
+    silence_durations: dict,
+    all_tokensalign_durations: list,
+    all_combined_duration: list,
+    files_with_short_pauses: list,
+) -> None:
     """
     Détermine les correspondances et les chevauchements entre les silences dans les tiers Combined et TokensAlign.
     Écrit les détails des silences dans un fichier TSV individuel pour chaque fichier TextGrid.
@@ -40,6 +46,15 @@ def compare_silence(
     all_tokensalign_durations (list): Liste pour stocker les durées de tous les silences dans TokensAlign.
     all_combined_duration (list): Liste pour stocker les durées de tous les silences dans Combined.
     files_with_short_pauses (list): Liste pour stocker les noms des fichiers avec des silences courts.
+
+    Returns:
+    None
+
+    Variables:
+    exact_matches (list): Liste pour stocker les correspondances exactes entre les silences.
+    partial_overlaps (list): Liste pour stocker les chevauchements partiels entre les silences.
+    unique_combined (list): Liste pour stocker les silences uniques dans Combined.
+    unique_tokensalign (list): Liste pour stocker les silences uniques dans TokensAlign.
     """
     # Ouvrir le fichier TextGrid
     textgrid_sil = tgio.openTextgrid(file_path)
@@ -170,7 +185,16 @@ def compare_silence(
     )
 
 
-def get_totals_from_tsv(tsv_file_path):
+def get_totals_from_tsv(tsv_file_path: str) -> dict[str, int]:
+    """
+    Calcule les totaux des silences à partir d'un fichier TSV.
+
+    Parameters:
+    tsv_file_path (str): Chemin vers le fichier TSV.
+
+    Returns:
+    dict: Dictionnaire contenant les totaux des silences.
+    """
     totals = {
         "Gold Silences": 0,
         "Non Gold Silences": 0,
@@ -189,13 +213,22 @@ def get_totals_from_tsv(tsv_file_path):
     return totals
 
 
-def histogramme_durees_silences(tier):
+def histogramme_durees_silences(tier: list[float]) -> None:
     """
     Crée un histogramme des durées des silences.
+
+    Parameters:
+    tier (list): Liste des durées des silences.
+
+    Returns:
+    None
+
+    Variables:
+    bins (numpy.ndarray): Intervalles des bins de 0.2 en 0.2 secondes.
     """
     # Créer les intervalles des bins de 0.2 en 0.2 secondes
     bins = np.arange(0, 6.1, 0.1)
-    
+
     # Créer l'histogramme avec seaborn
     plt.figure(figsize=(10, 6))
     ax = sns.histplot(tier, bins=bins, kde=False, edgecolor="black")
@@ -204,32 +237,34 @@ def histogramme_durees_silences(tier):
     ax.set_ylabel("Fréquence")
     ax.grid(True)
     ax.set_xlim(0, 6)
-    
+
     # Ajouter les annotations
     for p in ax.patches:
         height = p.get_height()
         if height > 0:  # Ajouter les annotations seulement pour les barres non nulles
             ax.annotate(
-                f'{int(height)}', 
-                (p.get_x() + p.get_width() / 2, height), 
-                ha='center', 
-                va='bottom'
+                f"{int(height)}",
+                (p.get_x() + p.get_width() / 2, height),
+                ha="center",
+                va="bottom",
             )
-    
+
     # Définir les positions des ticks sur l'axe x
     tick_positions = np.arange(0, 6.1, 0.1)
     ax.set_xticks(tick_positions)
 
     # Formatter pour n'afficher qu'une décimale
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.1f}'))
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.1f}"))
 
     # Orienter les étiquettes à 45°
-    ax.set_xticklabels([f'{tick:.1f}' for tick in tick_positions], rotation=45)
+    ax.set_xticklabels([f"{tick:.1f}" for tick in tick_positions], rotation=45)
 
     plt.show()
 
 
-def write_tsv_stat_from_textgrid(folder_path, tsv_file_path, file_tsv):
+def write_tsv_stat_from_textgrid(
+    folder_path: str, tsv_file_path: str, file_tsv: str
+) -> None:
     """
     Écrit les statistiques des silences dans les fichiers TextGrid dans un fichier TSV global.
     Calcule les durées moyennes des silences uniques et totaux dans Combined et TokensAlign.
@@ -239,6 +274,16 @@ def write_tsv_stat_from_textgrid(folder_path, tsv_file_path, file_tsv):
     Parameters:
     folder_path (str): Chemin vers le dossier contenant les fichiers TextGrid.
     tsv_file_path (str): Chemin vers le fichier TSV pour écrire les statistiques globales.
+    file_tsv (str): Nom du fichier TSV pour écrire les détails des silences.
+
+    Returns:
+    None
+
+    Variables:
+    silence_durations (dict): Dictionnaire pour stocker les durées des silences.
+    all_tokensalign_durations (list): Liste pour stocker les durées de tous les silences dans TokensAlign.
+    all_combined_duration (list): Liste pour stocker les durées de tous les silences dans Combined.
+    files_with_short_pauses (list): Liste pour stocker les noms des fichiers avec des silences courts.
     """
     silence_durations = {
         "unique_combined": 0,
@@ -333,7 +378,16 @@ def write_tsv_stat_from_textgrid(folder_path, tsv_file_path, file_tsv):
     histogramme_durees_silences(all_combined_duration)
 
 
-def count_hashes_in_tsv_columns(tsv_file_path):
+def count_hashes_in_tsv_columns(tsv_file_path: str) -> tuple[int, int]:
+    """
+    Compte les # dans les colonnes Gold et Non-Gold d'un fichier TSV.
+
+    Parameters:
+    tsv_file_path (str): Chemin vers le fichier TSV.
+
+    Returns:
+    tuple: Nombre de # dans la colonne Gold et la colonne Non-Gold.
+    """
     # Initialiser les compteurs pour chaque colonne
     gold_hashes = 0
     non_gold_hashes = 0
@@ -352,7 +406,19 @@ def count_hashes_in_tsv_columns(tsv_file_path):
     return gold_hashes, non_gold_hashes
 
 
-def count_same_position_hashes(tsv_file_path):
+def count_same_position_hashes(tsv_file_path: str) -> int:
+    """
+    Compte les # à la même position dans les phrases Gold et Non-Gold d'un fichier TSV.
+
+    Parameters:
+    tsv_file_path (str): Chemin vers le fichier TSV.
+
+    Returns:
+    int: Nombre de # à la même position dans les phrases Gold et Non-Gold.
+
+    Variables:
+    same_position_hashes_count (int): Compteur pour les # à la même position.
+    """
     same_position_hashes_count = 0
 
     with open(tsv_file_path, "r", newline="") as file:
@@ -380,6 +446,18 @@ def count_same_position_hashes(tsv_file_path):
 
 
 def count_misplaced_hashes(tsv_file_path):
+    """
+    Compare les # n'ayant pas la même position dans les phrases Gold et Non-Gold d'un fichier TSV.
+
+    Parameters:
+    tsv_file_path (str): Chemin vers le fichier TSV.
+
+    Returns:
+    int: Nombre de # mal placés dans les phrases Gold et Non-Gold.
+
+    Variables:
+    misplaced_hashes_count (int): Compteur pour les # mal placés.
+    """
     misplaced_hashes_count = 0
 
     with open(tsv_file_path, "r", newline="") as file:
@@ -390,7 +468,7 @@ def count_misplaced_hashes(tsv_file_path):
             gold_phrase = row[1]
             non_gold_phrase = row[2]
 
-            # Find positions of '#' in each phrase
+            # Trouver les positions de '#' dans chaque phrase
             gold_hash_positions = [
                 i for i, char in enumerate(gold_phrase) if char == "#"
             ]
@@ -398,7 +476,7 @@ def count_misplaced_hashes(tsv_file_path):
                 i for i, char in enumerate(non_gold_phrase) if char == "#"
             ]
 
-            # Find '#' in Non-Gold that are misplaced compared to Gold
+            # Trouver les # mal placés dans les phrases Gold et Non-Gold
             misplaced_hashes_count += len(
                 set(non_gold_hash_positions) - set(gold_hash_positions)
             )
@@ -406,7 +484,22 @@ def count_misplaced_hashes(tsv_file_path):
     return misplaced_hashes_count
 
 
-def count_hashes_in_file(filepath):
+def count_hashes_in_file(filepath: str) -> tuple[int, int, int, int]:
+    """
+    Compte les # dans les colonnes Gold et Non-Gold d'un fichier TSV.
+
+    Parameters:
+    filepath (str): Chemin vers le fichier TSV.
+
+    Returns:
+    tuple: Nombre de # dans la colonne Gold, la colonne Non-Gold, les # à la même position et les # mal placés.
+
+    Variables:
+    gold_hashes (int): Nombre de # dans la colonne Gold.
+    non_gold_hashes (int): Nombre de # dans la colonne Non-Gold.
+    same_position_hashes (int): Nombre de # à la même position.
+    misplaced_hashes (int): Nombre de # mal placés.
+    """
     if (
         filepath
         != "TSV/TSV_sentences_gold_non_gold_TALN/9pt_15ms/results_tsv-9pt_15ms.tsv"
@@ -431,6 +524,8 @@ def count_hashes_in_file(filepath):
         and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/1pt/results_tsv-1pt.tsv"
         and filepath
         != "TSV/TSV_sentences_gold_non_gold_TALN/entier/results_tsv-entier.tsv"
+        and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_webrtcvad/results_tsv-04-05_webrtcvad.tsv"
+        and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms_webrtcvad2/results_tsv-04-05_10ms_webrtcvad2.tsv"
     ):
 
         with open(filepath, "r", encoding="utf-8") as file:
@@ -460,7 +555,20 @@ def count_hashes_in_file(filepath):
             return gold_hashes, non_gold_hashes, same_position_hashes, misplaced_hashes
 
 
-def process_all_tsv_files(directory, output_file=None):
+def process_all_tsv_files(directory: str, output_file: str = None) -> dict:
+    """
+    Compte les # dans les colonnes Gold et Non-Gold de chaque fichier TSV dans un répertoire.
+
+    Parameters:
+    directory (str): Chemin vers le répertoire contenant les fichiers TSV.
+    output_file (str): Chemin vers le fichier de sortie pour écrire les statistiques.
+
+    Returns:
+    dict: Dictionnaire contenant les statistiques pour chaque fichier TSV.
+
+    Variables:
+    results (defaultdict): Dictionnaire pour stocker les statistiques.
+    """
     results = defaultdict(
         lambda: {
             "gold_hashes": 0,
@@ -487,6 +595,8 @@ def process_all_tsv_files(directory, output_file=None):
                 and file != "all_sentences-1pt.tsv"
                 and file != "all_sentences-04-05_entier.tsv"
                 and file != "all_sentences-04-05_10ms.tsv"
+                and file != "all_sentences-04-05_webrtcvad.tsv"
+                and file != "all_sentences-04-05_10ms_webrtcvad2.tsv"
                 and file.endswith(".tsv")
             ):
                 filepath = os.path.join(root, file)
@@ -530,7 +640,19 @@ def process_all_tsv_files(directory, output_file=None):
     return dict(results)
 
 
-def filter_files_by_hash_conditions(results):
+def filter_files_by_hash_conditions(results: dict) -> list[str]:
+    """
+    Filtre les fichiers en fonction des conditions spécifiées pour les # dans les colonnes Gold et Non-Gold.
+
+    Parameters:
+    results (dict): Dictionnaire contenant les statistiques pour chaque fichier TSV.
+
+    Returns:
+    list: Liste des noms des fichiers qui correspondent aux conditions.
+
+    Variables:
+    matching_files (list): Liste pour stocker les noms des fichiers qui correspondent aux conditions.
+    """
     # Liste pour stocker les noms des fichiers qui correspondent aux conditions
     matching_files = []
 
@@ -551,7 +673,20 @@ def filter_files_by_hash_conditions(results):
     return matching_files
 
 
-def find_files_with_largest_hash_difference(results):
+def find_files_with_largest_hash_difference(results: dict) -> list[tuple[str, int]]:
+    """
+    Trouve les 4 fichiers avec la plus grande différence de # entre les colonnes Gold et Non-Gold.
+
+    Parameters:
+    results (dict): Dictionnaire contenant les statistiques pour chaque fichier TSV.
+
+    Returns:
+    list: Les 4 fichiers avec la plus grande différence de #.
+
+    Variables:
+    differences (list): Liste pour stocker les différences de # pour chaque fichier.
+    top_4_files (list): Les 4 fichiers avec la plus grande différence de #.
+    """
     # Calculer la différence absolue entre gold_hashes et non_gold_hashes pour chaque fichier
     differences = []
     for file_name, data in results.items():
@@ -582,6 +717,10 @@ def find_files_with_largest_hash_difference(results):
             and file_name != "results_tsv-1pt_15ms.tsv"
             and file_name != "all_sentences-1pt.tsv"
             and file_name != "results_tsv-1pt.tsv"
+            and file_name != "all_sentences-04-05_webrtcvad.tsv"
+            and file_name != "results_tsv-04-05_webrtcvad.tsv"
+            and file_name != "all_sentences-04-05_10ms_webrtcvad2.tsv"
+            and file_name != "results_tsv-04-05_10ms_webrtcvad2.tsv"
         ):
 
             difference = abs(data["gold_hashes"] - data["non_gold_hashes"])
@@ -596,7 +735,19 @@ def find_files_with_largest_hash_difference(results):
     return top_4_files
 
 
-def calculer_pourcentages(fichier):
+def calculer_pourcentages(fichier: str) -> pd.Series:
+    """
+    Calcule les pourcentages pour chaque métrique à partir d'un fichier TSV (Percentage : Exact Matches, Partial Overlap, Unique in Gold, Unique in Non Gold).
+
+    Parameters:
+    fichier (str): Chemin vers le fichier TSV.
+
+    Returns:
+    pandas.Series: Moyennes des pourcentages pour chaque métrique.
+
+    Variables:
+    data (pandas.DataFrame): Données chargées à partir du fichier TSV.
+    """
     # Charger les données à partir du fichier TSV
     data = pd.read_csv(fichier, sep="\t")
 
@@ -630,13 +781,20 @@ def calculer_pourcentages(fichier):
     return average_percentages
 
 
-def compter_phrases_avec_motif(fichier, motif):
+def compter_phrases_avec_motif(fichier: str, motif: str) -> int:
     """
     Compte le nombre de phrases dans un fichier qui contiennent au moins une fois une expression correspondant au motif régulier fourni.
 
-    :param fichier: Chemin vers le fichier à analyser.
-    :param motif: Motif d'expression régulière à rechercher dans les phrases.
-    :return: Nombre de phrases correspondant au motif.
+    Parameters:
+    fichier (str): Chemin vers le fichier TSV.
+    motif (str): Motif régulier pour rechercher dans les phrases.
+
+    Returns:
+    int: Nombre de phrases contenant le motif.
+
+    Variables:
+    pattern (re.Pattern): Expression régulière compilée pour améliorer les performances.
+    count (int): Compteur pour les phrases contenant le motif.
     """
     # Compiler l'expression régulière pour améliorer les performances
     pattern = re.compile(motif)
@@ -661,7 +819,7 @@ def main():
     # folder_path = "MERGED/gold_non_gold"
     # tsv_file_path = "TSV/combined-tokensalign_silences_TALN.tsv"
     # tsv_all_sentences = "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences.tsv"
-    file = "04-05_10ms"
+    file = "04-05_webrtcvad"
     folder_path = "MERGED/gold_non_gold_" + file
     tsv_file_path = "TSV/combined-tokensalign_silences_TALN-" + file + ".tsv"
     tsv_all_sentences = (
