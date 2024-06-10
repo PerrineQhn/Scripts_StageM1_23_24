@@ -1,6 +1,5 @@
 import os
 import re
-import urllib.request
 from conll3 import *
 import ssl
 import warnings

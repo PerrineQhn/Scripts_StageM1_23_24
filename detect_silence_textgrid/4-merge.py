@@ -351,12 +351,12 @@ def merge_gold_non_gold(
 # base_folder = './TEXTGRID_WAV'
 # merged = './MERGED'
 
-# base_folder = './TEXTGRID_WAV_nongold'
-# merged = './MERGED/non_gold'
+base_folder = './TEXTGRID_WAV_nongold_sppas'
+merged = './MERGED/non_gold_sppas'
 
-base_folder = "TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad/"
-base_folder_gold = "TEXTGRID_WAV/"
-merged = "MERGED/gold_non_gold_04-05_10ms_webrtcvad/"
+# base_folder = "TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad/"
+# base_folder_gold = "TEXTGRID_WAV/"
+# merged = "MERGED/gold_non_gold_04-05_10ms_webrtcvad/"
 
 
 for subdir in os.listdir(base_folder):
@@ -369,15 +369,15 @@ for subdir in os.listdir(base_folder):
         # merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file)
         # merge_textgrid_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
 
-        # tiers_trans, other_tiers = generate_tiers_selection_non_gold_silence(subdir_path)
-        # merge_textgrid_non_gold_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
+        tiers_trans, other_tiers = generate_tiers_selection_non_gold_silence(subdir_path)
+        merge_textgrid_non_gold_tiers(subdir_path, tiers_trans, other_tiers, base_name_file, merged)
 
         # print(subdir_path)
-        gold_file = os.path.join(base_folder_gold, base_name_file)
-        tiers, tiers_combined = generate_tiers_selection_gold_non_gold_silence(
-            subdir_path, gold_file
-        )
-        # print(tiers, tiers_combined)
-        merge_gold_non_gold(
-            subdir_path, gold_file, tiers, tiers_combined, base_name_file, merged
-        )
+        # gold_file = os.path.join(base_folder_gold, base_name_file)
+        # tiers, tiers_combined = generate_tiers_selection_gold_non_gold_silence(
+        #     subdir_path, gold_file
+        # )
+        # # print(tiers, tiers_combined)
+        # merge_gold_non_gold(
+        #     subdir_path, gold_file, tiers, tiers_combined, base_name_file, merged
+        # )

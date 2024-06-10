@@ -126,7 +126,9 @@ def insert_pauses_in_non_gold_sentences(
         "|c",
         ">+",
         "||",
+        "}//",
         "&//",
+        "//.",
         ")",
         "|r",
         ">=",
@@ -153,6 +155,17 @@ def insert_pauses_in_non_gold_sentences(
         "{",
         "(",
         "[",
+        "&",
+        "||e",
+        "<{",
+        "//t",
+        "{|c",
+        "|}",
+        "|",
+        "/",
+        "?",
+        "+",
+        ",",
     ]
 
     diese_punct = ["{", "(", "["]
@@ -382,17 +395,16 @@ def insert_pauses_in_non_gold_sentences(
                         # Condition spécifique pour le fichier LAG_11_Adeniyi-Lifestory_MG
                         if (
                             idx_sentences_list < len(sentences_list)
-                            and sentences_list[idx_sentences_list - 1] == "DO"
                             and sentences_list[idx_sentences_list].upper() == "IF"
                             and sentences_list[idx_sentences_list + 1].upper() == "I"
                             and sentences_list[idx_sentences_list + 2].upper() == "IF"
                             and sentences_list[idx_sentences_list + 3].upper() == "I"
+                            and sentences_list[idx_sentences_list + 4].upper() == "WANT"
                         ):
-                            print(
-                                sentences_list[idx_sentences_list],
-                                sentences_list[idx_sentences_list - 1],
-                                sentence,
-                            )
+                            print("ICI !!!!")
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
                             new_sentence.append(sentence[j])
                             idx_sentences_list += 1
                             j += 1
@@ -416,6 +428,20 @@ def insert_pauses_in_non_gold_sentences(
 
                         if (
                             idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list].upper() == "WE"
+                            and sentences_list[idx_sentences_list + 1].upper() == "TALK"
+                            and sentences_list[idx_sentences_list + 2].upper() == "WE"
+                            and sentences_list[idx_sentences_list + 3].upper() == "JUST"
+                        ):
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        if (
+                            idx_sentences_list < len(sentences_list)
                             and sentences_list[idx_sentences_list - 1].upper() == "#"
                             and sentences_list[idx_sentences_list].upper() == "WE"
                             and sentences_list[idx_sentences_list + 1].upper() == "TALK"
@@ -428,6 +454,108 @@ def insert_pauses_in_non_gold_sentences(
                             idx_sentences_list += 1
                             j += 1
 
+                        # Specifique pour le fichier IBA_01
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 3].upper() == "CON"
+                            and sentences_list[idx_sentences_list - 2].upper() == "DEY"
+                            and sentences_list[idx_sentences_list - 1].upper() == "DO"
+                            and sentences_list[idx_sentences_list].upper() == "O"
+                            and sentences_list[idx_sentences_list + 1].upper() == "I"
+                            and sentences_list[idx_sentences_list + 2].upper() == "DO"
+                        ):
+                            print("DO O I DO !*!*!")
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        # Specifique pour le fichier ENU_36
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 1].upper() == "DON"
+                            and sentences_list[idx_sentences_list].upper() == "EVEN"
+                            and sentences_list[idx_sentences_list + 1].upper() == "SAY"
+                            and sentences_list[idx_sentences_list + 2].upper() == "I"
+                            and sentences_list[idx_sentences_list + 3].upper() == "NO"
+                        ):
+                            print(
+                                "EVEN SAY I !!!!",
+                                sentences_list[idx_sentences_list],
+                                sentences_list[idx_sentences_list + 1],
+                                sentences_list[idx_sentences_list + 2],
+                                sentences_list[idx_sentences_list + 3],
+                            )
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        # Specifique pour le fichier LAG_05
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 1].upper()
+                            == "PLACE"
+                            and sentences_list[idx_sentences_list].upper() == "NA"
+                            and sentences_list[idx_sentences_list + 1].upper() == "LIE"
+                            and sentences_list[idx_sentences_list + 2].upper() == "NA"
+                        ):
+                            print(
+                                "PLACE NA LIE NA !!!!",
+                                sentences_list[idx_sentences_list],
+                                sentences_list[idx_sentences_list + 1],
+                                sentences_list[idx_sentences_list + 2],
+                            )
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+                        if (
+                            idx_sentences_list < len(sentences_list)
+                            and sentences_list[idx_sentences_list - 1].upper() == "GO"
+                            and sentences_list[idx_sentences_list].upper() == "DEY"
+                            and sentences_list[idx_sentences_list + 1].upper()
+                            == "FOLLOW"
+                            and sentences_list[idx_sentences_list + 2].upper() == "AM"
+                            and sentences_list[idx_sentences_list + 3].upper() == "UP"
+                        ):
+                            print(
+                                "GO DEY FOLLOW AM UP !!!!",
+                                sentences_list[idx_sentences_list],
+                                sentences_list[idx_sentences_list + 1],
+                                sentences_list[idx_sentences_list + 2],
+                                sentences_list[idx_sentences_list + 3],
+                            )
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+                            new_sentence.append(sentence[j])
+                            idx_sentences_list += 1
+                            j += 1
+
+
                         if idx_sentences_list < len(sentences_list) - 2 and i + 3 < len(
                             tier
                         ):
@@ -435,7 +563,7 @@ def insert_pauses_in_non_gold_sentences(
                                 "case  token_label == #",
                                 "idx_sentences_list < len(sentences_list) - 2 and i + 3 < len(tier):"
                                 "sentence: ",
-                                sentence[j],
+                                # sentence[j],
                                 j,
                                 "sentences_list: ",
                                 sentences_list[idx_sentences_list],
@@ -449,7 +577,16 @@ def insert_pauses_in_non_gold_sentences(
                             )
                     i = i + 1
 
-            elif "'" in token and "'" not in token_label and token.upper() != "A'AH":
+            elif (
+                "'" in token
+                and "'" not in token_label
+                and token.upper() != "A'AH"
+                and filename
+                not in [
+                    "JOS_38_Bokos-Traditional-Wedding_M",
+                    "JOS_15_Graduate-Wahala_M",
+                ]
+            ):
                 print(filename)
                 print(
                     sentence[j],
@@ -459,7 +596,6 @@ def insert_pauses_in_non_gold_sentences(
                     i,
                     token_label,
                     token,
-                    sentence,
                     ' "\'" in token and "\'" not in token_label',
                 )
                 # time.sleep(11)
@@ -512,7 +648,7 @@ def insert_pauses_in_non_gold_sentences(
                     print("N", token_label)
                     move_step = 1
 
-                if token_label.upper() == "T":
+                if token_label.upper() == "T" and tier[i + 2][0].upper() != "OUNJE":
                     print("T", tier[i + 1][0])
                     token_label = "don" + "'" + token_label
                     print("T", token_label)
@@ -603,6 +739,41 @@ def insert_pauses_in_non_gold_sentences(
                     token_label = token_label + "'" + tier[i + 1][0]
                     move_step = 2
 
+                if token_label.upper() == "D":
+                    token_label = token_label + "'"
+                    move_step = 1
+
+                if token_label.upper() == "JESUS":
+                    token_label = token_label + "'"
+                    move_step = 1
+
+                if token_label.upper() == "T" and tier[i + 2][0].upper() == "OUNJE":
+                    token_label = token_label + "'" + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "LADIES":
+                    token_label = token_label + "'"
+                    move_step = 1
+
+                if token_label.upper() == "IF":
+                    token_label = token_label + "'" + tier[i + 1][0]
+                    print("IF", token_label)
+                    if token_label == "if'{s|}":
+                        token_label = "if's||"
+                    move_step = 2
+
+                if token_label.upper() == "DEY":
+                    token_label = token_label + "'" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "TEEN":
+                    token_label = token_label + "'" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "KE":
+                    token_label = token_label + "'" + tier[i + 1][0]
+                    move_step = 2
+
                 if token.upper() == token_label.upper():
                     new_sentence.append(token)
                     i += move_step
@@ -622,6 +793,9 @@ def insert_pauses_in_non_gold_sentences(
                     i,
                     token_label,
                     ' "-" in token and "-" not in token_label',
+                    token_label,
+                    tier[i + 1][0],
+                    filename,
                 )
                 move_step = 0
                 if token_label.upper() == "PRO":
@@ -644,6 +818,72 @@ def insert_pauses_in_non_gold_sentences(
                     token_label = token_label + "-" + tier[i + 1][0]
                     move_step = 2
 
+                if token_label.upper() == "POP":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "UNDER":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "NIGER":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "WIKI":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "EL":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "NA":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "VICE":
+                    token_label = token_label + "-" + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "HIP":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "TIN":
+                    token_label = token_label + "-" + tier[i + 1][0] + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "BED":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "RE":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "GRAND":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "MOTHER":
+                    token_label = (
+                        token_label + "-" + tier[i + 1][0] + "-" + tier[i + 2][0]
+                    )
+                    move_step = 3
+
+                if token_label.upper() == "TWENTY":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "ENUGU":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
+                if token_label.upper() == "GEO":
+                    token_label = token_label + "-" + tier[i + 1][0]
+                    move_step = 2
+
                 if token.upper() == token_label.upper():
                     new_sentence.append(token)
                     i += move_step
@@ -657,8 +897,11 @@ def insert_pauses_in_non_gold_sentences(
                     sentences_list[idx_sentences_list],
                     idx_sentences_list,
                     i,
-                    token_label,
                     ' "." in token and "." not in token_label',
+                    token_label,
+                    tier[i + 1][0],
+                    tier[i + 2][0],
+                    filename,
                 )
                 move_step = 0
                 if token_label.upper() == "O.":
@@ -672,6 +915,50 @@ def insert_pauses_in_non_gold_sentences(
                 if token_label.upper() == "A.":
                     token_label = token_label + tier[i + 1][0]
                     move_step = 2
+
+                if token_label.upper() == "ST":
+                    token_label = token_label + "."
+                    move_step = 1
+
+                if token_label.upper() == "EH":
+                    token_label = token_label + "."
+                    move_step = 1
+
+                if token_label.upper() == "2":
+                    token_label = token_label + "." + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "1":
+                    token_label = token_label + "." + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "95":
+                    token_label = token_label + "." + tier[i + 2][0]
+                    move_step = 3
+
+                if token_label.upper() == "100":
+                    print("100", tier[i + 1][0], tier[i + 2][0], tier[i + 3][0], tier[i + 4][0])
+                    if tier[i + 1][0].upper() == "#" and tier[i + 3][0] == "#":
+                        token_label = token_label + "." + tier[i + 4][0]
+                        move_step = 5
+                    elif tier[i + 1][0].upper() == "#" and tier[i + 3][0] != "#":
+                        token_label = token_label + "." + tier[i + 3][0]
+                        move_step = 4
+                    else:
+                        token_label = token_label + "." + tier[i + 2][0]
+                        move_step = 3
+
+                if token_label.upper() == "PROSPERITY":
+                    token_label = token_label + "."
+                    move_step = 1
+
+                if token_label.upper() == "HM":
+                    token_label = token_label + "."
+                    move_step = 1
+
+                if token_label.upper() == "DAY":
+                    token_label = token_label + "."
+                    move_step = 1
 
                 if token.upper() == token_label.upper():
                     new_sentence.append(token)
@@ -706,6 +993,161 @@ def insert_pauses_in_non_gold_sentences(
                     j += 1
                     idx_sentences_list += 1
 
+            elif "]" in token and "]" not in token_label:
+                move_step = 0
+                if token_label.upper() == "CHECHECHE":
+                    token_label = token_label + "]"
+                    move_step = 1
+
+                if token_label.upper() == "HUSTLE":
+                    token_label = token_label + "]"
+                    move_step = 1
+
+                if token_label.upper() == "TINS":
+                    token_label = token_label + "]"
+                    move_step = 1
+
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif ")" in token and ")" not in token_label:
+                move_step = 0
+                if token_label.upper() == "BEFORE":
+                    token_label = token_label + ")"
+                    move_step = 1
+
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif "}" in token and "}" not in token_label:
+                move_step = 0
+                if token_label.upper() == "SO":
+                    token_label = token_label + "}"
+                    move_step = 1
+
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif "<" in token and "<" not in token_label:
+                move_step = 0
+                if token_label.upper() == "ALL":
+                    token_label = token_label + "<"
+                    move_step = 1
+
+                if token_label.upper() == "HOUR":
+                    token_label = token_label + "<"
+                    move_step = 1
+
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif "," in token and "," not in token_label:
+                print(
+                    sentence[j],
+                    j,
+                    sentences_list[idx_sentences_list],
+                    idx_sentences_list,
+                    i,
+                    token_label,
+                    ' "," in token and "," not in token_label',
+                    filename,
+                )
+                move_step = 0
+                if token_label.upper() == "O":
+                    token_label = token_label + ","
+                    move_step = 1
+
+                if token_label.upper() == "KWALUM":
+                    token_label = token_label + ","
+                    move_step = 1
+
+                if token_label.upper() == "WOS":
+                    token_label = token_label + ","
+                    move_step = 1
+
+                if token_label.upper() == "PLACE":
+                    token_label = token_label + ","
+                    move_step = 1
+
+                if token_label.upper() == "MYSELF":
+                    token_label = token_label + ","
+                    move_step = 1
+
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            # elif "||" in token and "||" not in token_label:
+            #     move_step = 0
+            #     if token_label.upper() == "DE":
+            #         token_label = token_label + "||"
+            #         move_step = 1
+
+            #     if token.upper() == token_label.upper():
+            #         new_sentence.append(token)
+            #         i += move_step
+            #         j += 1
+            #         idx_sentences_list += 1
+
+            elif token_label.upper() == "{MILLION|C}":
+                token_label = "million|c"
+                move_step = 1
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif token_label.upper() == "{SEY|C}":
+                token_label = "sey|c"
+                move_step = 1
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif token_label.upper() == "{FOR|}":
+                token_label = "for||"
+                move_step = 1
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif token_label.upper() == "{SAY|}":
+                token_label = "say||"
+                move_step = 1
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
+            elif token_label.upper() == "{DI|}":
+                token_label = "di||"
+                move_step = 1
+                if token.upper() == token_label.upper():
+                    new_sentence.append(token)
+                    i += move_step
+                    j += 1
+                    idx_sentences_list += 1
+
             elif sentences_list[idx_sentences_list].upper() == token_label.upper():
                 c_tier = 0
                 c_word = 0
@@ -719,7 +1161,7 @@ def insert_pauses_in_non_gold_sentences(
                         print(
                             "case   sentences_list[idx_sentences_list].upper() == token_label.upper(): ",
                             sentences_list[idx_sentences_list],
-                            sentences_list[idx_word],
+                            # sentences_list[idx_word],
                             "tier[i-1][0] == #: idx_word_try < len(sentences_list): "
                             "sentence: ",
                             token_label.upper(),
@@ -822,13 +1264,6 @@ def insert_pauses_in_non_gold_sentences(
 
                     elif (
                         flag_diese is True
-                        and sentences_list[idx_word].upper() == "SAID"
-                    ):
-                        idx_word += 1
-                        continue
-
-                    elif (
-                        flag_diese is True
                         and sentences_list[idx_word].upper() == "DI"
                         and sentences_list[idx_sentences_list].upper() != "PERFUME"
                     ):
@@ -870,6 +1305,17 @@ def insert_pauses_in_non_gold_sentences(
                         idx_word += 1
                         continue
 
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word - 2].upper() == "DEY"
+                        and sentences_list[idx_word - 1].upper() == "DO"
+                        and sentences_list[idx_word].upper() == "O"
+                        and sentences_list[idx_sentences_list].upper() == "DO"
+                        and sentences_list[idx_word + 1].upper() == "I"
+                        and sentences_list[idx_word + 2].upper() == "DO"
+                    ):
+                        idx_word += 1
+                        continue
 
                     if (
                         flag_diese is True
@@ -1019,7 +1465,6 @@ def insert_pauses_in_non_gold_sentences(
                         and sentences_list[idx_word + 2].upper() == "ON"
                         and sentences_list[idx_word + 3].upper() == "NA"
                     ):
-                        print("DEY ON GO ON NA")
                         idx_word += 1
                         continue
 
@@ -1046,7 +1491,6 @@ def insert_pauses_in_non_gold_sentences(
                         and sentences_list[idx_sentences_list].upper() == "STILL"
                         and sentences_list[idx_word + 1].upper() == "STILL"
                     ):
-                        print("XYU,,,,?????")
                         idx_word += 3
                         continue
 
@@ -1056,7 +1500,6 @@ def insert_pauses_in_non_gold_sentences(
                         and sentences_list[idx_sentences_list].upper() != "STILL"
                         and sentences_list[idx_sentences_list].upper() != "ON"
                     ):
-                        print("GO !!!!!!")
                         idx_word += 1
                         continue
 
@@ -1070,18 +1513,146 @@ def insert_pauses_in_non_gold_sentences(
                         flag_diese is True
                         and sentences_list[idx_word].upper() == "DEY"
                         and sentences_list[idx_sentences_list].upper() != "ON"
+                        and sentences_list[idx_sentences_list].upper() != "GO"
                     ):
-                        print("DEY")
+                        print("DEY !!!")
                         idx_word += 1
                         continue
 
                     elif (
-                        flag_diese is True and sentences_list[idx_word].upper() == "YOU"
+                        flag_diese is True
+                        and sentences_list[idx_sentences_list].upper() == "YOU"
+                        and sentences_list[idx_word].upper() == "#"
+                        and sentences_list[idx_word + 1].upper() == "YOU"
+                    ):
+                        print("AM FOR YOU !!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "EH"
+                        and sentences_list[idx_sentences_list].upper() == "OIL"
+                        and sentences_list[idx_word + 1].upper() == "OIL"
+                        and sentences_list[idx_word + 2].upper() == "NOW"
+                        and sentences_list[idx_word + 3].upper() == "COME"
+                    ):
+                        print("OIL EH OIL !*!*!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "AT"
+                        and sentences_list[idx_sentences_list].upper() == "PROCESS"
+                        and sentences_list[idx_word + 1].upper() == "DI"
+                        and sentences_list[idx_word + 2].upper() == "PROCESS"
+                    ):
+                        print("AT PROCESS !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "OR"
+                        and sentences_list[idx_sentences_list].upper() == "TIME"
+                        and sentences_list[idx_word + 1].upper() == "DI"
+                        and sentences_list[idx_word + 2].upper() == "TIME"
+                    ):
+                        print("OR TIME !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word - 2].upper() == "PERSON"
+                        and sentences_list[idx_word - 1].upper() == "DON"
+                        and sentences_list[idx_word].upper() == "E"
+                        and sentences_list[idx_sentences_list].upper() == "DON"
+                        and sentences_list[idx_word + 1].upper() == "DON"
+                        and sentences_list[idx_word + 2].upper() == "DIE"
+                    ):
+                        print("PERSON DON E !*!*!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "FALL"
+                        and sentences_list[idx_sentences_list].upper() == "DON"
+                        and sentences_list[idx_word + 1].upper() == "E"
+                        and sentences_list[idx_word + 2].upper() == "DON"
+                    ):
+                        print("FALL DON E !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "DE"
+                        and sentences_list[idx_sentences_list].upper() == "NO"
+                        and sentences_list[idx_word + 1].upper() == "NO"
+                        and sentences_list[idx_word + 2].upper() == "DEY"
+                        and sentences_list[idx_word + 3].upper() == "PUT"
+                    ):
+                        print("DE NO NO DEY PUT !*!*!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "HAP"
+                        and sentences_list[idx_sentences_list].upper() == "NO"
+                        and sentences_list[idx_word + 1].upper() == "NO"
+                        and sentences_list[idx_word + 2].upper() == "HAPPEN"
+                    ):
+                        print("HAP NO NO AGAIN !*!*!!!!")
+                        idx_word += 1
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "WE"
+                        and sentences_list[idx_sentences_list].upper() == "ABOUT"
+                        and sentences_list[idx_word + 1].upper() == "DEY"
+                        and sentences_list[idx_word + 2].upper() == "COME"
+                    ):
+                        print("WE ABOUT DEY COME !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "DEY"
+                        and sentences_list[idx_sentences_list].upper() == "GO"
+                        and sentences_list[idx_word + 1].upper() == "YOU"
+                        and sentences_list[idx_word + 2].upper() == "GO"
+                    ):
+                        print("GO DEY YOU GO !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "EHM"
+                        and sentences_list[idx_sentences_list].upper() == "PRACTICE"
+                        and sentences_list[idx_word + 1].upper() == "EHM"
+                        and sentences_list[idx_word + 2].upper() == "PRACTICE"
+                    ):
+                        print("PRACTICE EHM EHM PRACTICE !*!*!!!!")
+                        idx_word += 2
+                        continue
+
+                    elif (
+                        flag_diese is True
+                        and sentences_list[idx_word].upper() == "SAID"
                     ):
                         idx_word += 1
                         continue
+
                     else:
                         break
+
                 print("c_tier == c_word:", c_tier, c_word)
                 # print(sentences_list[idx_sentences_list], sentences_list[idx_word])
 
@@ -1124,7 +1695,7 @@ def insert_pauses_in_non_gold_sentences(
                     "sentences_list: ",
                     sentences_list[idx_sentences_list],
                     idx_sentences_list,
-                    sentences_list[idx_word],
+                    # sentences_list[idx_word],
                     "tier: ",
                     token_label,
                     tier[i][0],
@@ -1171,6 +1742,7 @@ def insert_pauses_in_non_gold_sentences(
                             sentence = non_gold_sentences[l]
                             adjusted_non_gold_sentences.append(" ".join(new_sentence))
                             new_sentence = []
+
                         if idx_sentences_list < len(sentences_list):
                             print(
                                 "add hidden characters 2: ",
@@ -1193,6 +1765,7 @@ def insert_pauses_in_non_gold_sentences(
                             and tier[i + 1][0].upper() == "IT"
                         ):
                             break
+
                         if idx_sentences_list == len(sentences_list) - 1:
                             break
                         if (
@@ -1235,6 +1808,10 @@ def insert_pauses_in_non_gold_sentences(
                     token_label,
                     sentences_list[idx_word],
                     "====================else",
+                    "idx_word",
+                    sentences_list[idx_word],
+                    "idx_sentences_list",
+                    sentences_list[idx_sentences_list],
                 )
                 time.sleep(1000)
         l += 1
@@ -1279,10 +1856,10 @@ def write_to_tsv(
 
 def main():
     # Chemins des répertoires
-    gold_dir = "SUD_Naija-NSC-master/"
-    non_gold_dir = "SUD_Naija-NSC-master-gold-non-gold-TALN/"
-    textgrid_dir = "TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad/"
-    output_dir = "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms_webrtcvad/"
+    gold_dir = "SUD_Naija-NSC-master/non_gold"
+    non_gold_dir = "SUD_Naija-NSC-master/non_gold"
+    textgrid_dir = "TEXTGRID_WAV_nongold_sppas/"
+    output_dir = "TSV/TSV_sentences_nongold_sppas/"
 
     # Obtenir tous les fichiers
     gold_files = get_files_from_directory(gold_dir, ".conllu")
@@ -1309,7 +1886,7 @@ def main():
             output_tsv_file_path = os.path.join(output_dir, base_name + ".tsv")
             # output_global_tsv_file_path = os.path.join(output_dir, 'all_sentences.tsv')
             output_global_tsv_file_path = os.path.join(
-                output_dir, "all_sentences-04-05_10ms_webrtcvad.tsv"
+                output_dir, "all_sentences-nongold_sppas.tsv"
             )
 
             if not os.path.exists(output_global_tsv_file_path):
@@ -1322,7 +1899,12 @@ def main():
             if non_gold_file in non_gold_files:
                 print(f"Traitement de {base_name}")
                 print(f"Gold: {gold_file}")
-                list_file = []
+                list_file = [
+                    # "SUD_Naija-NSC-master/non_gold/WAZP_06_Tommys-Life-Story_M.conllu",
+                    # "SUD_Naija-NSC-master/non_gold/LAG_18_Lagos-Districts_M.conllu",
+                    # "SUD_Naija-NSC-master/non_gold/KAD_24_Biography_M.conllu",
+                ]
+                list_test = ["SUD_Naija-NSC-master/non_gold/ABJ_INF_11_Land_M.conllu"]
 
                 # if "JOS_20" in gold_file:
                 if gold_file not in list_file:

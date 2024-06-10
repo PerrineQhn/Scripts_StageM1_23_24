@@ -526,6 +526,8 @@ def count_hashes_in_file(filepath: str) -> tuple[int, int, int, int]:
         != "TSV/TSV_sentences_gold_non_gold_TALN/entier/results_tsv-entier.tsv"
         and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_webrtcvad/results_tsv-04-05_webrtcvad.tsv"
         and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms_webrtcvad2/results_tsv-04-05_10ms_webrtcvad2.tsv"
+        and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_10ms_webrtcvad3/results_tsv-04-05_10ms_webrtcvad3.tsv"
+        and filepath != "TSV/TSV_sentences_gold_non_gold_TALN/04-05_webrtcvad3/results_tsv-04-05_webrtcvad3.tsv"
     ):
 
         with open(filepath, "r", encoding="utf-8") as file:
@@ -597,6 +599,8 @@ def process_all_tsv_files(directory: str, output_file: str = None) -> dict:
                 and file != "all_sentences-04-05_10ms.tsv"
                 and file != "all_sentences-04-05_webrtcvad.tsv"
                 and file != "all_sentences-04-05_10ms_webrtcvad2.tsv"
+                and file != "all_sentences-04-05_10ms_webrtcvad3.tsv"
+                and file != "all_sentences-04-05_webrtcvad3.tsv"
                 and file.endswith(".tsv")
             ):
                 filepath = os.path.join(root, file)
@@ -721,6 +725,10 @@ def find_files_with_largest_hash_difference(results: dict) -> list[tuple[str, in
             and file_name != "results_tsv-04-05_webrtcvad.tsv"
             and file_name != "all_sentences-04-05_10ms_webrtcvad2.tsv"
             and file_name != "results_tsv-04-05_10ms_webrtcvad2.tsv"
+            and file_name != "all_sentences-04-05_10ms_webrtcvad3.tsv"
+            and file_name != "results_tsv-04-05_10ms_webrtcvad3.tsv"
+            and file_name != "all_sentences-04-05_webrtcvad3.tsv"
+            and file_name != "results_tsv-04-05_webrtcvad3.tsv"
         ):
 
             difference = abs(data["gold_hashes"] - data["non_gold_hashes"])
@@ -819,7 +827,7 @@ def main():
     # folder_path = "MERGED/gold_non_gold"
     # tsv_file_path = "TSV/combined-tokensalign_silences_TALN.tsv"
     # tsv_all_sentences = "TSV/TSV_sentences_gold_non_gold_TALN/all_sentences.tsv"
-    file = "04-05_webrtcvad"
+    file = "04-05_entier"
     folder_path = "MERGED/gold_non_gold_" + file
     tsv_file_path = "TSV/combined-tokensalign_silences_TALN-" + file + ".tsv"
     tsv_all_sentences = (

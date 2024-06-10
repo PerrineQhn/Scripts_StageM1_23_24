@@ -5,12 +5,11 @@ import sys
 import wave
 
 import numpy as np
-import textgrid
-from praatio import tgio
 import webrtcvad
+from praatio import tgio
 from pydub import AudioSegment
 
-LOG_FILE = "processed_files_webrtcvad.log"
+LOG_FILE = "processed_files_nongold_webrtcvad.log"
 
 
 # Fonction pour convertir le fichier wav à un taux d'échantillonnage de 16000 Hz
@@ -132,6 +131,7 @@ def log_processed_file(file):
         log.write(file + "\n")
     print(f"Fichier traité ajouté au fichier de log: {file}")
 
+
 def rename_intervals(intervals: list) -> list:
     """
     Renommer les intervalles IPU en ipu_1, ipu_2, etc.
@@ -157,6 +157,7 @@ def rename_intervals(intervals: list) -> list:
             counter += 1
     return new_intervals
 
+
 def merge_consecutive_ipus(intervals: list) -> list:
     """
     Fusionne les IPUs consécutifs.
@@ -180,6 +181,7 @@ def merge_consecutive_ipus(intervals: list) -> list:
                 merged_intervals.append(interval)
     return merged_intervals
 
+
 def process_file(textgrid_path, wav_path):
     # Initialiser VAD avec la sensibilité la plus élevée
     vad = webrtcvad.Vad(3)
@@ -191,7 +193,7 @@ def process_file(textgrid_path, wav_path):
     # Utiliser VAD pour détecter les segments de parole
     audio, sample_rate = read_wave(converted_wav_path)
     frames = frame_generator(10, audio, sample_rate)  # 10 ms par trame
-    segments = vad_collector(sample_rate, 10, 40, vad, list(frames))
+    segments = vad_collector(sample_rate, 10, 40, vad, list(frames)) # 40 ms de padding, 10 ms par trame
 
     # Convertir les segments détectés en une liste de tuples (début, fin)
     detected_segments = []
@@ -219,7 +221,7 @@ def process_file(textgrid_path, wav_path):
     print("Segments de parole affinés:", len(refined_segments))
 
     # Ajouter les segments de silence basés sur les niveaux sonores
-    silence_threshold = -40  # Ajuster le seuil en dB pour détecter les silences
+    # silence_threshold = -40  # Ajuster le seuil en dB pour détecter les silences
     min_silence_duration = 0.10  # Durée minimale des silences en secondes
 
     silence_segments = []
@@ -236,8 +238,17 @@ def process_file(textgrid_path, wav_path):
         silence_segments.insert(0, (0, refined_segments[0][0]))
 
     # Ajouter un segment de silence à la fin si le dernier segment ne se termine pas à la fin du fichier
-    if refined_segments and refined_segments[-1][1] < wave.open(converted_wav_path).getnframes() / sample_rate:
-        silence_segments.append((refined_segments[-1][1], wave.open(converted_wav_path).getnframes() / sample_rate))
+    if (
+        refined_segments
+        and refined_segments[-1][1]
+        < wave.open(converted_wav_path).getnframes() / sample_rate
+    ):
+        silence_segments.append(
+            (
+                refined_segments[-1][1],
+                wave.open(converted_wav_path).getnframes() / sample_rate,
+            )
+        )
 
     print("Segments de silence:", len(silence_segments))
 
@@ -265,7 +276,7 @@ def process_file(textgrid_path, wav_path):
     new_tg.addTier(interval_tier)
 
     print(refined_segments)
-    
+
     # Sauvegarder le nouveau TextGrid
     new_textgrid_path = textgrid_path.replace(".TextGrid", "-ipus.TextGrid")
     new_tg.save(new_textgrid_path)
@@ -279,16 +290,16 @@ def main():
     # Lire les fichiers déjà traités
     processed_files = read_processed_files()
 
-    base_path = "/Users/perrine/Desktop/Stage_2023-2024/TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad/"
+    base_path = "/Users/perrine/Desktop/Stage_2023-2024/TEXTGRID_WAV_nongold/"
     for root, dirs, files in os.walk(base_path):
         files.sort()
         for file in files:
-            if file.endswith("_MG.TextGrid"):
+            if file.endswith("_M.TextGrid"):
                 textgrid_path = os.path.join(root, file)
                 if textgrid_path in processed_files:
                     print(f"Fichier déjà traité: {file}")
                     continue
-                wav_path = textgrid_path.replace("_MG.TextGrid", "_MG.wav")
+                wav_path = textgrid_path.replace("_M.TextGrid", "_M.wav")
                 if os.path.exists(wav_path):
                     print(f"Traitement du fichier: {textgrid_path} et {wav_path}")
                     try:

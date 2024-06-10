@@ -18,7 +18,7 @@ import time
 from praatio import tgio
 from tqdm import tqdm
 
-eps = 0.25 # durée 
+eps = 0.25  # durée
 
 
 def align_silence(ipus_path: str, tokens_path: str) -> tgio.Textgrid:
@@ -247,7 +247,6 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
         if ipu_label == "#":
             print("#", ipu_start, ipu_end, token_start, token_end, last_combine_end)
 
-
             if pos_ipu == 0 and ipu_start > token_end:
                 combine_intervals.append([token_start, token_end, token_label])
                 print("pos_ipu == 0 and ipu_start > token_end", combine_intervals[-1])
@@ -256,7 +255,9 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
                 continue
 
             if ipu_start <= token_start <= token_end <= ipu_end:
+                print("ipu_s <= t_s <= t_e <= ipu_e")
                 last_combine_end = ipu_start
+                combine_intervals.append([last_combine_end, ipu_end, "#"])
                 pos_token += 1
                 is_inserted_diese = False
                 print("A1")
@@ -453,12 +454,15 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
                         ipu_end,
                         combine_intervals[-2][2] == "#",
                     )
+
                     combine_intervals[-1][1] = ipu_end
                     last_combine_end = ipu_end
+
                 elif pos_token == size_token - 1:
                     if ipu_end == token_end:
                         combine_intervals.append([token_start, token_end, token_label])
                         print("Last Token", combine_intervals[-1])
+
                 pos_ipu += 1
                 is_inserted_diese = False
                 print(
@@ -479,11 +483,19 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
                 is_inserted_diese = True
                 print("A10")
 
+            elif ipu_start > token_start and ipu_end == token_end:
+                print("ipu_start > token_end and ipu_end == token_end")
+                combine_intervals.append([token_start, token_end, token_label])
+                last_combine_end = token_end
+                pos_token += 1
+                is_inserted_diese = False
+                print("A11")
+
             else:
                 print(
                     ipu_start, ipu_end, ipu_label, token_start, token_end, token_label
                 )
-                print("impossible cases ?")
+                print("impossible cases ???")
                 time.sleep(111)
 
     # Combiner les intervalles vides dans IPUS
@@ -501,9 +513,9 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
     # print("combine_intervals : ", combine_intervals)
     new_combine_intervals = []
     for idx in range(1, len(combine_intervals)):
-        # print(combine_intervals[idx - 1], combine_intervals[idx])
+        print(combine_intervals[idx - 1], combine_intervals[idx])
 
-        if combine_intervals[idx][2] == "#":
+        if combine_intervals[idx][2] == "#" and new_combine_intervals != []:
             if (
                 combine_intervals[idx - 1][2] == "*"
                 and combine_intervals[idx - 2][2] == "#"
@@ -588,6 +600,31 @@ def create_tier(ipus_path: str, tokens_path: str, tier: str) -> tgio.IntervalTie
             else:
                 print("add interval #", combine_intervals[idx], "\n")
                 new_combine_intervals.append(combine_intervals[idx])
+
+        elif combine_intervals[idx][2] == "#" and not new_combine_intervals:
+            if (
+                combine_intervals[idx - 1][2] == "#"
+                and combine_intervals[idx][2] == "#"
+            ):
+                print(
+                    "\nYNY",
+                    combine_intervals[idx][0],
+                    combine_intervals[idx - 1][0],
+                    combine_intervals[idx][1],
+                    combine_intervals[idx - 1][1],
+                    combine_intervals[idx][2],
+                    combine_intervals[idx - 1][2],
+                )
+                new_combine_intervals.append(
+                    [
+                        min(
+                            combine_intervals[idx][0],
+                            combine_intervals[idx - 1][0],
+                        ),
+                        max(combine_intervals[idx][1], combine_intervals[idx - 1][1]),
+                        combine_intervals[idx][2],
+                    ]
+                )
 
         elif combine_intervals[idx][2] == "*":
             continue
@@ -695,7 +732,7 @@ def save_textgrid(
 
 
 # base_folder = "./TEXTGRID_WAV_nongold/"
-base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad"
+base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad3"
 tsv_folder = "./TSV/"
 # pitchtier_folder = "./Praat/non_gold/"
 pitchtier_folder = "./Praat/"
@@ -743,11 +780,13 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
             ipus_textgrid_path = os.path.join(subdir_path, ipus_file)
             # id_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M-id.TextGrid")
             # sent_textgrid_name = ipus_file.replace("_M-ipus.TextGrid", "_M.TextGrid")
+            # syll_textgrid_name = ipus_file.replace(
+            #     "_M-ipus.TextGrid", "_M-syll.TextGrid"
+            # )
             id_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-id.TextGrid")
             sent_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG.TextGrid")
-            syll_textgrid_name = ipus_file.replace(
-                "_MG-ipus.TextGrid", "_MG-syll.TextGrid"
-            )
+            syll_textgrid_name = ipus_file.replace("_MG-ipus.TextGrid", "_MG-syll.TextGrid")
+            
             sent_textgrid_path = None
 
             # Construire le chemin vers le fichier PitchTier correspondant
@@ -771,20 +810,26 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     syll_textgrid_path = os.path.join(subdir_path, syll_textgrid_name)
 
                     # Construire le chemin de sortie pour le tier syl_tok
-                    # syl_tok_output_path = ipus_textgrid_path.replace("_M-ipus.TextGrid", "_M-syl_tok.TextGrid")
+                    # syl_tok_output_path = ipus_textgrid_path.replace(
+                    #     "_M-ipus.TextGrid", "_M-syl_tok.TextGrid"
+                    # )
                     syl_tok_output_path = ipus_textgrid_path.replace(
                         "_MG-ipus.TextGrid", "_MG-syl_tok.TextGrid"
                     )
 
                     # Créer le tier syl_tok et aligner les silences
                     # print(file, ipus_textgrid_path, id_textgrid_path, pitchtier_path, syll_textgrid_path, syl_tok_output_path)
-                    # if syl_tok_output_path == "./TEXTGRID_WAV_gold_non_gold_TALN_15ms_02-04/ABJ_GWA_12/ABJ_GWA_12_Accident_MG-syl_tok.TextGrid":
+                    # if (
+                    #     syl_tok_output_path
+                    #     == "./TEXTGRID_WAV_nongold/ENU_07/ENU_07_South-Eastern-Politics_M-syl_tok.TextGrid"
+                    # ):
                     combined_tier = create_tier(
                         ipus_textgrid_path, id_textgrid_path, "TokensAlign"
                     )
                     syll_tier = create_tier(
                         ipus_textgrid_path, syll_textgrid_path, "SyllAlign"
                     )
+
                     save_textgrid(combined_tier, syll_tier, syl_tok_output_path)
 
                     align_silence(ipus_textgrid_path, syl_tok_output_path)
@@ -796,7 +841,7 @@ for subdir in tqdm(sorted(os.listdir(base_folder))):
                     print(f"PitchTier file not found for {ipus_file}\n")
 
 # Ecrire les phrases avec des intervalles de silence dans un fichier TSV
-output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_10-05_05ms.tsv")
-with open(output_tsv_path, "w", encoding="utf-8") as f:
-    for item in all_phrases_with_hash:
-        f.write("\t".join(item) + "\n")
+# output_tsv_path = os.path.join(tsv_folder, "global_silences-non_gold_sppas.tsv")
+# with open(output_tsv_path, "w", encoding="utf-8") as f:
+#     for item in all_phrases_with_hash:
+#         f.write("\t".join(item) + "\n")

@@ -240,6 +240,8 @@ def rename_intervals(intervals: list) -> list:
         start, end, label = interval
         if "#" in label:
             new_intervals.append([start, end, label])
+        elif label == "*":
+            new_intervals.append([start, end, "#"])
         else:
             new_label = f"ipu_{counter}"
             new_intervals.append([start, end, new_label])
@@ -271,7 +273,9 @@ def correct_intervals(intervals: list) -> list:
             if i + 1 < len(intervals):
                 end = intervals[i + 1][0]
             else:
-                end = start + 0.01  # Ensure there's a minimal duration for the last interval
+                end = (
+                    start + 0.01
+                )  # Ensure there's a minimal duration for the last interval
         previous_end = end
         corrected_intervals.append([start, end, label])
     return corrected_intervals
@@ -366,10 +370,12 @@ def correct_silence_duration(
     if new_intervals[0][0] != 0.0:
         new_intervals.insert(0, [0.0, new_intervals[0][0], "#"])
 
-    # for i in range(1, len(new_intervals)):
-    #     if new_intervals[i-1][1] < new_intervals[i][0]:
-    #         new_intervals.insert(i, [new_intervals[i-1][1], new_intervals[i][0], '*'])
+    for i in range(1, len(new_intervals)):
+        if new_intervals[i - 1][1] < new_intervals[i][0]:
+            new_intervals.insert(i, [new_intervals[i - 1][1], new_intervals[i][0], "*"])
 
+    new_intervals = rename_intervals(new_intervals)
+    new_intervals = merge_intervals(new_intervals)
     new_intervals = correct_intervals_limite_duration(new_intervals, limite=0.10)
     new_intervals = merge_intervals(new_intervals)
     new_intervals = rename_intervals(new_intervals)
@@ -380,12 +386,14 @@ def correct_silence_duration(
 
     for interval in new_intervals:
         if interval[0] >= interval[1]:
-            print(f"Anomaly: startTime={interval[0]}, stopTime={interval[1]}, label={interval[2]}")
+            print(
+                f"Anomaly: startTime={interval[0]}, stopTime={interval[1]}, label={interval[2]}"
+            )
             interval[1] = interval[0] + 0.01
 
     for i in range(1, len(new_intervals)):
-        if new_intervals[i-1][1] > new_intervals[i][0]:
-            new_intervals[i][0] = new_intervals[i-1][1]
+        if new_intervals[i - 1][1] > new_intervals[i][0]:
+            new_intervals[i][0] = new_intervals[i - 1][1]
 
     new_ipus_textgrid = tgio.Textgrid()
     new_ipus_textgrid.addTier(tgio.IntervalTier("IPUs", new_intervals))
@@ -395,7 +403,7 @@ def correct_silence_duration(
 
 
 def main():
-    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad2/"
+    base_folder = "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad3/"
     pitchtier_folder = "./Praat/"
 
     for subdir in tqdm(os.listdir(base_folder)):
@@ -416,20 +424,20 @@ def main():
                     pitchtier_folder, textgrid.replace("-ipus.TextGrid", ".PitchTier")
                 )
 
-                # if (
-                #     ipus_file_path
-                #     == "./TEXTGRID_WAV_gold_non_gold_TALN_15ms_02-04/BEN_36/BEN_36_Clever-Girl_MG-ipus.TextGrid"
-                # ):
-                print(f"Processing {ipus_file_path}")
-                correct_silence_duration(
-                    textgrid_file,
-                    ipus_file_path,
-                    pitch_path,
-                    os.path.join(
-                        subdir_path,
-                        textgrid.replace("-ipus.TextGrid", "-ipus.TextGrid"),
-                    ),
-                )
+                if (
+                    ipus_file_path
+                    == "./TEXTGRID_WAV_gold_non_gold_TALN_04-05_10ms_webrtcvad3/ABJ_GWA_03/ABJ_GWA_03_Cost-Of-Living-In-Abuja_MG-ipus.TextGrid"
+                ):
+                    print(f"Processing {ipus_file_path}")
+                    correct_silence_duration(
+                        textgrid_file,
+                        ipus_file_path,
+                        pitch_path,
+                        os.path.join(
+                            subdir_path,
+                            textgrid.replace("-ipus.TextGrid", "-new_ipus.TextGrid"),
+                        ),
+                    )
 
 
 if __name__ == "__main__":
