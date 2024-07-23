@@ -1,0 +1,9 @@
+.DS_Store
+.vscode/
+data/
+SLAMplus/
+output_notebook/
+scripts/output_notebook/
+Icon
+processed_files_nongold_webrtcvad.log
+scripts/processed_files_nongold_webrtcvad.log
