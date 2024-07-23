@@ -24,3 +24,4 @@ results_non_gold.json
 results.json
 tableaux.zip
 update_conllus_prosody.ipynb
+.DS_Store
